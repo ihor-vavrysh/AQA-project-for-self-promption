@@ -53,6 +53,9 @@ importers:
       '@tutorforge/shared':
         specifier: workspace:*
         version: link:../../packages/shared
+      '@tutorforge/taxonomy':
+        specifier: workspace:*
+        version: link:../../packages/taxonomy
       drizzle-orm:
         specifier: ^0.45.3
         version: 0.45.3(@types/pg@8.23.1)(pg@8.23.1)
@@ -190,6 +193,12 @@ importers:
       zod:
         specifier: ^4.0.1
         version: 4.6.5
+
+  packages/taxonomy:
+    dependencies:
+      '@tutorforge/shared':
+        specifier: workspace:*
+        version: link:../shared
 
   tools/openapi-codegen:
     devDependencies:

@@ -16,7 +16,8 @@ See [docs/CATALOG.md](./docs/CATALOG.md).
 
 **Stack:** Node 22 + NestJS · Angular 20+ · PostgreSQL + Drizzle · BullMQ/Redis · Claude API
 
-**Status:** Phase 1 — Walking skeleton in progress. Catalog planned for Phase 2a.
+**Status:** Phase 1 — Walking skeleton in progress. Phase 2a catalog foundation
+landed: taxonomy spine, usage-rights invariants, depth gate, and public read APIs.
 
 ## Getting started
 
@@ -60,6 +61,13 @@ pnpm test:integration
 pnpm test:e2e
 ```
 
+Seed the subject taxonomy (ISCED-F fields, UK National Curriculum subjects, and
+the Key Stage 3/4 wedge topics) after migrating:
+
+```sh
+pnpm db:seed
+```
+
 The Compose stack starts PostgreSQL 16 and Redis 7 on localhost. Its default
 credentials are for local development only; do not reuse them outside this machine.
 Phase 1 uses PostgreSQL; Redis is ready for the Phase 3 generation queue.
@@ -98,6 +106,27 @@ in `apps/api/fly.toml` and `apps/web/fly.toml`. The official Fly Terraform
 provider is archived and does not support Managed Postgres, so deployment uses
 Fly's native configuration and CLI rather than an unmaintained Terraform
 provider. Managed Redis is deferred until the Phase 3 queue needs it.
+
+## Content catalog
+
+The catalog's rights model is enforced in three places from one definition:
+`checkUsageRights` in `@tutorforge/shared`, matching PostgreSQL `CHECK`
+constraints on `resources`, and an audit over every stored row. A resource is
+deep-linked, embedded through the provider's own player, or — for open licences
+only — mirrored; `licence` and `usage_tier` are mandatory and the database
+refuses any row the application layer would reject.
+
+Taxonomy nodes stay unpublished until they pass the depth gate (12 resources
+across 3 media types), so navigation never presents a topic as covered when it
+is not. `CatalogService.refreshDepthGate()` recomputes the counters and is
+idempotent.
+
+| Endpoint                              | Purpose                                                          |
+| ------------------------------------- | ---------------------------------------------------------------- |
+| `GET /api/v1/catalog/taxonomy`        | Browse the tree; published nodes and their ancestors by default  |
+| `GET /api/v1/catalog/nodes/:slug`     | One taxonomy node                                                |
+| `GET /api/v1/catalog/resources`       | Published resources with facet counts; `node` filters by subtree |
+| `GET /api/v1/catalog/resources/:slug` | One published resource with its tier capabilities                |
 
 📋 **[Read the full plan → PLAN.md](./PLAN.md)** ·
 **[Content catalog plan](./docs/CATALOG.md)** ·
