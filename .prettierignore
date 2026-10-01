@@ -5,6 +5,7 @@ coverage/
 **/.angular/**
 pnpm-lock.yaml
 PLAN.md
+docs/CATALOG.md
 hello.html
 apps/web/src/app/core/api/api.generated.ts
 apps/api/openapi.json

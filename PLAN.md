@@ -40,11 +40,19 @@ minors) never receive raw model output.
 - Generation is **drafted** → tutor reviews/edits → **approved** → published to a lesson
 - Provenance record on every generated item (prompt version, model, tokens, cost, safety flags)
 - Tutor feedback (accept / edit / reject + reason) captured as eval signal
+- **Content catalog** (§8): taxonomy-navigable pages for courses, tutorials, books, audio
+  and video, hand-seeded in one subject/region wedge, with enrichment and
+  assign-to-learner
 
 ### Explicitly out of MVP
 
-Learner-facing accounts, live chat tutoring, payments, video, mobile apps, multi-model
-routing beyond the three Claude tiers, RAG over tutor-uploaded documents (Phase 6 stretch).
+Learner-facing accounts, live chat tutoring, payments, mobile apps, multi-model routing
+beyond the three Claude tiers, RAG over tutor-uploaded documents (Phase 6 stretch).
+
+For the catalog specifically: **hosting any third-party content**, automated ingestion
+connectors (Phase 5b), breadth beyond the wedge, and public search indexing before
+enrichment ships. Third-party video and audio are in scope as *linked and embedded*
+material, never as hosted material — see docs/CATALOG.md §3.
 
 ---
 
@@ -159,15 +167,18 @@ tutorforge/
 ├── packages/
 │   ├── shared/                 Zod schemas + inferred TS types, shared by api & web
 │   ├── prompts/                ★ versioned prompt artifacts (§7)
-│   └── evals/                  ★ eval harness, golden sets, judges, reports (§7)
+│   ├── evals/                  ★ eval harness, golden sets, judges, reports (§7)
+│   ├── taxonomy/               ISCED-F / UK-NC / CASE imports, seed data (§8)
+│   └── connectors/             one adapter per content source, recorded fixtures (§8)
 ├── e2e/                        Playwright specs, fixtures, page objects
 ├── load/                       k6 scenarios
 ├── tools/openapi-codegen/      OpenAPI TypeScript client generator
 ├── infra/                      Dockerfiles, compose, Terraform, deploy manifests
-├── .github/workflows/          CI/CD (§9)
+├── .github/workflows/          CI/CD (§10)
 ├── docs/
 │   ├── adr/                    architecture decision records
 │   ├── MODEL_CARD.md           ★ what the AI does, limits, eval results
+│   ├── CATALOG.md              content catalog plan (§8)
 │   └── TESTING.md              the strategy, for humans
 └── CLAUDE.md                   ★ repo conventions for AI coding agents
 ```
@@ -199,6 +210,12 @@ ReviewDecision ── reviewerId, action (approve | edit | reject), editDiff, re
       ▼
 Lesson ── orderedContentIds[], publishedAt
 ```
+
+Catalog tables (`taxonomy_node`, `resource`, `resource_enrichment`, `resource_health`,
+`resource_assignment`, `collection`, `topic_demand`) are specified in
+[docs/CATALOG.md §7](./docs/CATALOG.md). They reuse this provenance pattern deliberately:
+enrichment is model output, so it carries the same prompt version, model, token and cost
+fields as `GeneratedContent`.
 
 `ReviewDecision` deserves attention: every tutor edit is a labelled example of "the model
 got this wrong, here's the fix". Phase 6 mines it to grow the golden set automatically.
@@ -252,7 +269,46 @@ This is what "incorporated AI artifacts" means in practice here. Two categories.
 
 ---
 
-## 8. Test automation strategy
+## 8. Content catalog — courses, tutorials, books, audio, video
+
+Public and in-app pages for courses, tutorials, references (books), audio and video
+materials across a comprehensive subject taxonomy. **Full plan:
+[docs/CATALOG.md](./docs/CATALOG.md)** — read its §1 first, because it changes the build
+order the request implies.
+
+The short version:
+
+- **The catalog is not the moat.** Every category is already free and SEO-dominant
+  elsewhere. The defensible product is *matching* — "for this learner, what next?" — not a
+  directory. The catalog is the substrate; §4's personalization is the product.
+- **Taxonomy breadth is cheap; catalog depth is not.** Build the whole tree on day one
+  (ISCED-F 2013 for fields, UK National Curriculum / SCED for school subjects, 1EdTech
+  CASE for standards alignment, schema.org `LearningResource`/LRMI for resource metadata).
+  Then light one **wedge** — recommended: UK GCSE/KS3–4 maths and sciences — and gate every
+  other node behind a **depth threshold**, rendering it as "request this topic" until it
+  earns publication. That button is free demand discovery.
+- **Never host third-party content.** Three usage tiers: open/public-domain (deep-link and
+  mirror), embed-permitted (official embed only), commercial (metadata plus affiliate link
+  only). `licence` and `usage_tier` are mandatory non-null columns enforced by a database
+  constraint *and* a failing build — the highest-value tests in the repo.
+- **Enrichment is the unique value**: age-band fit, readability, prerequisite concepts,
+  standards alignment and character-fit tags computed per resource by the Phase 3 AI core,
+  with the same provenance and eval discipline as generated content. It is simultaneously
+  what makes a page worth ranking and what makes recommendation possible.
+- **Seed by hand before building ingestion.** ~300 curated wedge resources via reviewed CSV
+  validates the pages, the enrichment value and the acquisition thesis in two weeks. The
+  connector framework comes after that proves out, not before.
+- **Commercially**, public catalog pages are a distribution channel feeding tutor SaaS
+  signups. Affiliate revenue (Coursera 15–45%, edX 5–10%, Udemy 8%) is real but small
+  enough that it must not shape a single product decision.
+
+Personalization rules carry over without exception: **gender affects representation only
+and never resource selection or ranking**, and the §4 bias-parity eval is extended to
+assert identical ranked resource lists across gender values.
+
+---
+
+## 9. Test automation strategy
 
 | Layer | Tool | Scope | Where it runs | Gate |
 | --- | --- | --- | --- | --- |
@@ -269,6 +325,12 @@ This is what "incorporated AI artifacts" means in practice here. Two categories.
 | Mutation | **Stryker** on domain + AI orchestrator | Proves the unit tests bite | Nightly | Blocking below score threshold |
 | Load | **k6** — generation endpoint under concurrency, queue saturation | `load/` | Nightly + pre-release | Blocking on p95 breach |
 | Security | CodeQL, `pnpm audit`, **gitleaks**, **Trivy** image scan, dependency review | Whole repo | PR + nightly | Blocking on high/critical |
+| **Catalog legal invariants** | Custom tests + DB `CHECK` | No null `licence`/`usage_tier`; Tier C never exposes embed or full text; Tier B never stored | PR | **Blocking** |
+| Connector contract | Recorded fixtures per source; nightly live drift check | Each content source adapter | PR (replay) + nightly (live) | Blocking |
+| Dedup quality | Precision/recall on a labelled fixture set | Canonicalisation + fuzzy matching | PR | Blocking on threshold |
+| Structured data | schema.org JSON-LD validation | Every public catalog template | PR | Blocking |
+| SEO / perf | Lighthouse CI budgets, sitemap shard + canonical checks | Catalog pages | PR | Blocking on budget breach |
+| Link health | Nightly sweep + depth-gate regression | All catalog resources | Nightly | Alert + auto-tombstone |
 | Smoke | Playwright subset against deployed env | Staging & prod | Post-deploy | Blocking → auto-rollback |
 
 Principles: **no mocking of the database** (Testcontainers instead); **no sleeps** in E2E
@@ -277,7 +339,7 @@ to a tracked quarantine job with a 7-day expiry that fails the build if unresolv
 
 ---
 
-## 9. CI/CD
+## 10. CI/CD
 
 GitHub Actions. Three workflows.
 
@@ -336,7 +398,7 @@ maintained provider becomes available or the hosting target changes.
 
 ---
 
-## 10. Observability
+## 11. Observability
 
 OpenTelemetry traces end to end, with the AI call as a first-class span carrying model,
 prompt version, token counts, cost, and cache status. Structured JSON logs with request
@@ -347,7 +409,7 @@ anomalies and approval-rate drops.
 
 ---
 
-## 11. Delivery phases
+## 12. Delivery phases
 
 Sized for one engineer with AI assistance. Each phase ends green and deployable.
 
@@ -356,17 +418,24 @@ Sized for one engineer with AI assistance. Each phase ends green and deployable.
 | **0 — Foundations** | Monorepo, Turborepo, strict TS, lint/format, Docker Compose dev stack, `pr.yml` skeleton running lint + a trivial test, CLAUDE.md, first ADRs | 3–4 d |
 | **1 — Walking skeleton** | Nest API + Angular shell, auth (OIDC via Auth0 or Keycloak), Drizzle schema + migrations, one real endpoint, OpenAPI generation + typed client, Testcontainers integration test, one Playwright E2E, deploy to staging. **CI/CD is fully wired before any feature work.** | 1.5 w |
 | **2 — Domain** | Orgs, tutors, learner roster with the four profile dimensions, lesson shell; full unit + integration coverage; a11y baseline | 1.5 w |
+| **2a — Catalog: taxonomy + wedge** | Taxonomy spine imported (ISCED-F, UK NC, wedge topics), CASE framework mirror, catalog data model, ~300 hand-curated wedge resources via reviewed CSV, topic hub + five media-type templates + resource detail, faceted search, JSON-LD, sharded sitemap, licence/takedown pages, depth gate, "request a topic". `noindex` until 4b. | 3 w |
 | **3 — AI core** | Prompt registry, orchestrator, structured output, Claude integration, BullMQ job pipeline, provenance recording, cassette record/replay, cost meter, moderation stage | 2 w |
 | **4 — Review loop + evals** | Draft → review → edit → approve → publish UI; `packages/evals` harness, golden set v1, judges, bias-parity suite, budgets; eval jobs in PR and nightly; model card | 2 w |
+| **4b — Catalog: enrichment + matching** | Enrichment pipeline on the Phase 3 core (age-band fit, readability, prerequisites, standards alignment, character-fit tags, safety vet), recommendation panel, assign + outcome capture, enrichment evals, bias parity extended to ranking, indexing enabled | 2 w |
 | **5 — Hardening & showcase polish** | Mutation testing, k6, security scans, SBOM + provenance, preview environments, blue/green + rollback, eval trend site on GitHub Pages, README with architecture diagrams and a 3-minute demo video | 1.5 w |
-| **6 — Stretch** | Feedback flywheel (mine `ReviewDecision` into the golden set), RAG over tutor-uploaded curriculum docs, multilingual output, offline worksheet PDF export | open |
+| **5b — Catalog: connectors + ops** | Connector framework; Gutendex (self-hosted), LibriVox, OpenStax/LibreTexts/OER Commons, YouTube Data API, Open Library bulk import; dedup; link-health monitoring; spot-check queue | 2.5 w |
+| **6 — Stretch** | Feedback flywheel (mine `ReviewDecision` and `resource_assignment` outcomes into ranking and the golden set), curated pathways, demand-driven node lighting, affiliate wiring, second region, RAG over tutor-uploaded curriculum docs, multilingual output, offline worksheet PDF export | open |
 
-**MVP through Phase 5: roughly 9–10 weeks.** Phases 0–1 are the ones not to rush; a
-showcase project that adds CI at the end always looks like it.
+**MVP through Phase 5: roughly 9–10 weeks without the catalog, 16–17 weeks with it.**
+Phases 0–1 are the ones not to rush; a showcase project that adds CI at the end always
+looks like it. The catalog phases are deliberately interleaved rather than appended: 2a
+ships pages against hand-seeded data, 4b adds the AI enrichment that makes them worth
+indexing, and only 5b automates ingestion. Each is independently shippable, so the catalog
+can be stopped after 2a or 4b without leaving a half-built module.
 
 ---
 
-## 12. Definition of done for the showcase
+## 13. Definition of done for the showcase
 
 - [ ] `git clone && pnpm i && pnpm dev` works from a cold machine, documented in the README
 - [ ] Green badge set: CI, coverage, eval score, security
@@ -377,10 +446,13 @@ showcase project that adds CI at the end always looks like it.
 - [ ] A 3-minute demo video: generate → review → publish, plus the bias-parity test failing
       on a deliberately biased prompt and passing after the fix
 - [ ] Publicly deployed staging instance with seeded demo data
+- [ ] One catalog wedge that looks *finished* — every published node past the depth gate,
+      zero dead links, visible last-verified dates
+- [ ] A CI run demonstrating the licence invariant failing the build on an unlicensed resource
 
 ---
 
-## 13. Risks
+## 14. Risks
 
 | Risk | Mitigation |
 | --- | --- |
@@ -390,11 +462,15 @@ showcase project that adds CI at the end always looks like it.
 | Children's data compliance | §4: pseudonymous handles, no learner PII in prompts, tutor-mediated only, data minimisation, deletion path, documented lawful basis |
 | Model output quality is the product risk | Human-in-the-loop approval is mandatory and non-bypassable in MVP; tutor approval rate is the headline metric |
 | Prompt injection via profile free-text | Profile fields are delimited and treated as data, never instructions; adversarial suite must stay 100% blocked |
+| Catalog breadth dilutes the whole project | docs/CATALOG.md §1: full taxonomy, one lit wedge, depth gate enforced in code rather than by intention. If the catalog starts setting the roadmap, stop building it |
+| Copyright exposure from third-party books, audio, video | Never host; three usage tiers; mandatory non-null `licence`/`usage_tier` with a blocking CI test; takedown policy live before the first public page |
+| Third-party content unsuitable for minors | AI pre-screen plus mandatory human confirmation before anything is surfaceable under 16; tutor-mediated assignment only |
+| Link rot and provider API withdrawal | Nightly health sweep, tombstones not 404s, isolated connector adapters, `source_terms_verified_at` with quarterly re-review, self-host what becomes load-bearing |
 | The gender dimension reads badly to a reviewer | §4 makes the position explicit and the bias-parity test makes it demonstrable — turning the riskiest requirement into the strongest artifact |
 
 ---
 
-## 14. Open decisions
+## 15. Open decisions
 
 1. **Auth provider** — Auth0 selected for Phase 1; self-hosted Keycloak was deferred.
 2. **Hosting** — Fly.io selected. Use native Fly app configuration and GitHub Actions;
@@ -402,5 +478,16 @@ showcase project that adds CI at the end always looks like it.
 3. **Preview environments** — real value, real cost. Phase 5, cut if time is short.
 4. **Regions in MVP** — recommend three: `en-GB/KS3`, `en-US/CommonCore`, `uk-UA/NUS`.
    Enough to prove the abstraction without drowning in curriculum research.
-5. **Repository** — build this in `ihor-vavrysh/test` or start a clean `tutorforge` repo?
-   A showcase benefits from a clean history and a purposeful name.
+5. ~~**Repository**~~ — **Decided:** built in a clean repository
+   (`ihor-vavrysh/aqa-project-for-self-promption`) rather than the original scratch repo.
+6. **The catalog wedge** — recommend UK GCSE/KS3–4 maths and the three sciences, `en-GB`:
+   paying-tutor density, exam-driven urgency, and public specifications that make curriculum
+   alignment objectively checkable. A founder's call, not an engineering one; the
+   architecture is wedge-agnostic and only the seed data changes.
+7. **Depth gate threshold** — recommend ≥12 enriched resources spanning ≥3 media types
+   before a taxonomy node is published and indexed. A product-quality dial; tune on real pages.
+8. **Taxonomy hierarchy storage** — Postgres `ltree` vs. a closure table. Recommend `ltree`
+   for the read-heavy subtree queries this module is made of.
+9. **Catalog indexing timing** — recommend building pages in Phase 2a but holding `noindex`
+   until enrichment lands in 4b. The ranking case depends on enrichment existing, and a
+   premature crawl of thin pages is expensive to undo.

@@ -15,6 +15,13 @@ accounts or bypass tutor review of generated content.
 - Keep learner data minimal and pseudonymous in model requests. Optional gender
   influences representation only, never ability, difficulty, or topic selection.
 - Prefer real database integration tests using Testcontainers over database mocks.
+- Never host third-party catalog content. Classify every resource into an open,
+  embed-permitted, or commercial usage tier, and link or embed accordingly.
+- `licence` and `usage_tier` are mandatory on every catalog resource. Do not add a code
+  path, import, or fixture that creates a resource without them.
+- Gender never influences resource selection or ranking, only representation.
+- Seed catalog data by hand before building ingestion connectors, and keep a taxonomy node
+  unpublished until it passes the depth gate in `docs/CATALOG.md`.
 - Keep pull-request AI tests deterministic with replayed responses; reserve live
   model evaluations for scheduled or explicitly requested runs.
 
