@@ -1,0 +1,160 @@
+:host {
+  display: block;
+}
+
+.roster {
+  width: min(100% - 2rem, 1080px);
+  min-height: 65vh;
+  margin: 0 auto;
+  padding: 3rem 0 5rem;
+}
+
+.page-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 2rem;
+  margin-bottom: 2.5rem;
+}
+
+.eyebrow {
+  margin: 0 0 0.7rem;
+  color: #527b58;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+h1 {
+  margin: 0;
+  color: #173b36;
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  letter-spacing: -0.05em;
+}
+
+.intro {
+  max-width: 650px;
+  margin: 0.8rem 0 0;
+  color: #4d625e;
+  line-height: 1.6;
+}
+
+.button {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  padding: 0.65rem 1rem;
+  border-radius: 0.6rem;
+  font-weight: 650;
+  text-decoration: none;
+}
+
+.button-primary {
+  background: #1c594d;
+  color: #fff;
+}
+
+.button:focus-visible,
+.learner-card:focus-visible {
+  outline: 3px solid #547f63;
+  outline-offset: 3px;
+}
+
+.learner-list {
+  display: grid;
+  gap: 0.9rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.learner-card {
+  display: flex;
+  min-height: 108px;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.25rem;
+  border: 1px solid #dfe6df;
+  border-radius: 1rem;
+  background: #fff;
+  color: inherit;
+  text-decoration: none;
+  box-shadow: 0 12px 30px rgb(30 62 51 / 4%);
+}
+
+.learner-card:hover {
+  border-color: #9fb9a3;
+}
+
+.avatar {
+  display: grid;
+  width: 2.8rem;
+  height: 2.8rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 50%;
+  background: #edf3e8;
+  color: #23453e;
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.learner-summary {
+  display: grid;
+  gap: 0.25rem;
+  color: #566a64;
+  font-size: 0.92rem;
+}
+
+.learner-summary strong {
+  color: #183d38;
+  font-size: 1.1rem;
+}
+
+.updated {
+  margin-left: auto;
+  color: #566a64;
+  font-size: 0.85rem;
+}
+
+.status,
+.error,
+.empty-state {
+  padding: 1.25rem;
+  border-radius: 0.8rem;
+  line-height: 1.6;
+}
+
+.status {
+  color: #416d48;
+}
+
+.error {
+  border: 1px solid #e8b8ae;
+  background: #fff1ee;
+  color: #832c1e;
+}
+
+.empty-state {
+  border: 1px solid #dfe6df;
+  background: #fff;
+}
+
+.empty-state h2 {
+  margin-top: 0;
+  color: #183d38;
+}
+
+@media (max-width: 650px) {
+  .page-heading,
+  .learner-card {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .updated {
+    margin-left: 0;
+  }
+}

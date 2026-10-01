@@ -226,6 +226,217 @@
         ]
       }
     },
+    "/api/v1/learners": {
+      "get": {
+        "operationId": "LearnersController_findAll",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LearnerDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request validation failed or identifier is invalid"
+          },
+          "401": {
+            "description": "A valid Auth0 access token is required"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List mentee profiles belonging to the authenticated tutor",
+        "tags": [
+          "learners"
+        ]
+      },
+      "post": {
+        "operationId": "LearnersController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateLearnerDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LearnerDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request validation failed or identifier is invalid"
+          },
+          "401": {
+            "description": "A valid Auth0 access token is required"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a tutor-managed pseudonymous mentee profile",
+        "tags": [
+          "learners"
+        ]
+      }
+    },
+    "/api/v1/learners/{learnerId}": {
+      "get": {
+        "operationId": "LearnersController_findOne",
+        "parameters": [
+          {
+            "name": "learnerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LearnerDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request validation failed or identifier is invalid"
+          },
+          "401": {
+            "description": "A valid Auth0 access token is required"
+          },
+          "404": {
+            "description": "Mentee profile not found"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get a mentee profile belonging to the authenticated tutor",
+        "tags": [
+          "learners"
+        ]
+      },
+      "patch": {
+        "operationId": "LearnersController_update",
+        "parameters": [
+          {
+            "name": "learnerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateLearnerDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LearnerDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request validation failed or identifier is invalid"
+          },
+          "401": {
+            "description": "A valid Auth0 access token is required"
+          },
+          "404": {
+            "description": "Mentee profile not found"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update a mentee profile belonging to the authenticated tutor",
+        "tags": [
+          "learners"
+        ]
+      },
+      "delete": {
+        "operationId": "LearnersController_remove",
+        "parameters": [
+          {
+            "name": "learnerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Mentee profile deleted"
+          },
+          "400": {
+            "description": "Request validation failed or identifier is invalid"
+          },
+          "401": {
+            "description": "A valid Auth0 access token is required"
+          },
+          "404": {
+            "description": "Mentee profile not found"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete a mentee profile belonging to the authenticated tutor",
+        "tags": [
+          "learners"
+        ]
+      }
+    },
     "/api/v1/me": {
       "get": {
         "operationId": "UsersController_getMe",
@@ -699,6 +910,272 @@
           "isbn",
           "capabilities"
         ]
+      },
+      "LearnerDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "pseudonym": {
+            "type": "string",
+            "maxLength": 40,
+            "description": "Pseudonymous handle; do not use a real name"
+          },
+          "ageBand": {
+            "type": "string",
+            "enum": [
+              "5-7",
+              "8-10",
+              "11-13",
+              "14-16",
+              "17-18"
+            ]
+          },
+          "locale": {
+            "type": "string",
+            "maxLength": 20,
+            "example": "en-GB"
+          },
+          "curriculumCode": {
+            "type": "string",
+            "maxLength": 40,
+            "example": "KS3"
+          },
+          "interests": {
+            "maxItems": 10,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "learningPreference": {
+            "type": "string",
+            "enum": [
+              "visual",
+              "narrative",
+              "step-by-step",
+              "challenge-first"
+            ]
+          },
+          "confidenceLevel": {
+            "type": "string",
+            "enum": [
+              "low",
+              "developing",
+              "confident",
+              "high"
+            ]
+          },
+          "attentionSpan": {
+            "type": "string",
+            "enum": [
+              "under-10-minutes",
+              "10-20-minutes",
+              "over-20-minutes"
+            ]
+          },
+          "gender": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 64
+          },
+          "subject": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "level": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "pseudonym",
+          "ageBand",
+          "locale",
+          "curriculumCode",
+          "interests",
+          "learningPreference",
+          "confidenceLevel",
+          "attentionSpan",
+          "gender",
+          "subject",
+          "level",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "CreateLearnerDto": {
+        "type": "object",
+        "properties": {
+          "pseudonym": {
+            "type": "string",
+            "maxLength": 40,
+            "description": "Pseudonymous handle; do not use a real name"
+          },
+          "ageBand": {
+            "type": "string",
+            "enum": [
+              "5-7",
+              "8-10",
+              "11-13",
+              "14-16",
+              "17-18"
+            ]
+          },
+          "locale": {
+            "type": "string",
+            "maxLength": 20,
+            "example": "en-GB"
+          },
+          "curriculumCode": {
+            "type": "string",
+            "maxLength": 40,
+            "example": "KS3"
+          },
+          "interests": {
+            "maxItems": 10,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "learningPreference": {
+            "type": "string",
+            "enum": [
+              "visual",
+              "narrative",
+              "step-by-step",
+              "challenge-first"
+            ]
+          },
+          "confidenceLevel": {
+            "type": "string",
+            "enum": [
+              "low",
+              "developing",
+              "confident",
+              "high"
+            ]
+          },
+          "attentionSpan": {
+            "type": "string",
+            "enum": [
+              "under-10-minutes",
+              "10-20-minutes",
+              "over-20-minutes"
+            ]
+          },
+          "gender": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 64
+          },
+          "subject": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "level": {
+            "type": "string",
+            "maxLength": 80
+          }
+        },
+        "required": [
+          "pseudonym",
+          "ageBand",
+          "locale",
+          "curriculumCode",
+          "interests",
+          "learningPreference",
+          "confidenceLevel",
+          "attentionSpan",
+          "gender",
+          "subject",
+          "level"
+        ]
+      },
+      "UpdateLearnerDto": {
+        "type": "object",
+        "properties": {
+          "pseudonym": {
+            "type": "string",
+            "maxLength": 40
+          },
+          "ageBand": {
+            "type": "string",
+            "enum": [
+              "5-7",
+              "8-10",
+              "11-13",
+              "14-16",
+              "17-18"
+            ]
+          },
+          "locale": {
+            "type": "string",
+            "maxLength": 20
+          },
+          "curriculumCode": {
+            "type": "string",
+            "maxLength": 40
+          },
+          "interests": {
+            "maxItems": 10,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "learningPreference": {
+            "type": "string",
+            "enum": [
+              "visual",
+              "narrative",
+              "step-by-step",
+              "challenge-first"
+            ]
+          },
+          "confidenceLevel": {
+            "type": "string",
+            "enum": [
+              "low",
+              "developing",
+              "confident",
+              "high"
+            ]
+          },
+          "attentionSpan": {
+            "type": "string",
+            "enum": [
+              "under-10-minutes",
+              "10-20-minutes",
+              "over-20-minutes"
+            ]
+          },
+          "gender": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 64
+          },
+          "subject": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "level": {
+            "type": "string",
+            "maxLength": 80
+          }
+        }
       },
       "CurrentUserDto": {
         "type": "object",

@@ -1,7 +1,7 @@
 {
   "auth0": {
-    "domain": "",
-    "clientId": "",
-    "audience": ""
+    "domain": "dev-q9od7qlz.eu.auth0.com",
+    "clientId": "8LLhOYMYK0HUgF6aG9JinQcN7ZWyMNAj",
+    "audience": "https://api.tutorforge.local"
   }
 }

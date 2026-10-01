@@ -1,0 +1,57 @@
+<main class="roster">
+  <header class="page-heading">
+    <div>
+      <p class="eyebrow">Tutor workspace</p>
+      <h1>Mentee profiles</h1>
+      <p class="intro">
+        Keep a minimal, pseudonymous profile for each mentee. Mentees do not sign in to TutorForge.
+      </p>
+    </div>
+    @if (authenticated()) {
+      <a class="button button-primary" routerLink="/learners/new">Add mentee</a>
+    }
+  </header>
+
+  @if (!authConfigured) {
+    <p class="error" role="alert">
+      Auth0 is not configured. Add the tenant domain, client ID, and API audience to
+      <code>public/app-config.json</code>.
+    </p>
+  } @else if (!authenticated()) {
+    <section class="empty-state sign-in-state">
+      <h2>Sign in to view your roster</h2>
+      <p>Your mentee profiles are private to your tutor account.</p>
+      @if (loginError()) {
+        <p class="error" role="alert">{{ loginError() }}</p>
+      }
+      <button class="button button-primary" type="button" (click)="signIn()">Sign in</button>
+      <button class="button button-quiet" type="button" (click)="signUp()">Sign up</button>
+    </section>
+  } @else if (error()) {
+    <p class="error" role="alert">{{ error() }}</p>
+  } @else if (loading()) {
+    <p class="status" role="status">Loading mentee profiles…</p>
+  } @else if (learners().length === 0) {
+    <section class="empty-state">
+      <h2>Your roster is ready</h2>
+      <p>Add a pseudonymous profile to start organizing your mentees’ learning preferences.</p>
+      <a class="button button-primary" routerLink="/learners/new">Create the first profile</a>
+    </section>
+  } @else {
+    <ul class="learner-list">
+      @for (learner of learners(); track learner.id) {
+        <li>
+          <a class="learner-card" [routerLink]="['/learners', learner.id]">
+            <span class="avatar" aria-hidden="true">{{ learner.pseudonym.slice(0, 1) }}</span>
+            <span class="learner-summary">
+              <strong>{{ learner.pseudonym }}</strong>
+              <span>{{ learner.subject }} · {{ learner.level }} · ages {{ learner.ageBand }}</span>
+              <span>{{ learner.locale }} / {{ learner.curriculumCode }}</span>
+            </span>
+            <span class="updated">Updated {{ learner.updatedAt | date: 'mediumDate' }}</span>
+          </a>
+        </li>
+      }
+    </ul>
+  }
+</main>

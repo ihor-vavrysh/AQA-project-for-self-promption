@@ -95,6 +95,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/learners": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List mentee profiles belonging to the authenticated tutor */
+        get: operations["LearnersController_findAll"];
+        put?: never;
+        /** Create a tutor-managed pseudonymous mentee profile */
+        post: operations["LearnersController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/learners/{learnerId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a mentee profile belonging to the authenticated tutor */
+        get: operations["LearnersController_findOne"];
+        put?: never;
+        post?: never;
+        /** Delete a mentee profile belonging to the authenticated tutor */
+        delete: operations["LearnersController_remove"];
+        options?: never;
+        head?: never;
+        /** Update a mentee profile belonging to the authenticated tutor */
+        patch: operations["LearnersController_update"];
+        trace?: never;
+    };
     "/api/v1/me": {
         parameters: {
             query?: never;
@@ -235,6 +272,69 @@ export interface components {
             authors: string[];
             isbn: string | null;
             capabilities: components["schemas"]["TierCapabilitiesDto"];
+        };
+        LearnerDto: {
+            /** Format: uuid */
+            id: string;
+            /** @description Pseudonymous handle; do not use a real name */
+            pseudonym: string;
+            /** @enum {string} */
+            ageBand: "5-7" | "8-10" | "11-13" | "14-16" | "17-18";
+            /** @example en-GB */
+            locale: string;
+            /** @example KS3 */
+            curriculumCode: string;
+            interests: string[];
+            /** @enum {string} */
+            learningPreference: "visual" | "narrative" | "step-by-step" | "challenge-first";
+            /** @enum {string} */
+            confidenceLevel: "low" | "developing" | "confident" | "high";
+            /** @enum {string} */
+            attentionSpan: "under-10-minutes" | "10-20-minutes" | "over-20-minutes";
+            gender: string | null;
+            subject: string;
+            level: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        CreateLearnerDto: {
+            /** @description Pseudonymous handle; do not use a real name */
+            pseudonym: string;
+            /** @enum {string} */
+            ageBand: "5-7" | "8-10" | "11-13" | "14-16" | "17-18";
+            /** @example en-GB */
+            locale: string;
+            /** @example KS3 */
+            curriculumCode: string;
+            interests: string[];
+            /** @enum {string} */
+            learningPreference: "visual" | "narrative" | "step-by-step" | "challenge-first";
+            /** @enum {string} */
+            confidenceLevel: "low" | "developing" | "confident" | "high";
+            /** @enum {string} */
+            attentionSpan: "under-10-minutes" | "10-20-minutes" | "over-20-minutes";
+            gender: string | null;
+            subject: string;
+            level: string;
+        };
+        UpdateLearnerDto: {
+            pseudonym?: string;
+            /** @enum {string} */
+            ageBand?: "5-7" | "8-10" | "11-13" | "14-16" | "17-18";
+            locale?: string;
+            curriculumCode?: string;
+            interests?: string[];
+            /** @enum {string} */
+            learningPreference?: "visual" | "narrative" | "step-by-step" | "challenge-first";
+            /** @enum {string} */
+            confidenceLevel?: "low" | "developing" | "confident" | "high";
+            /** @enum {string} */
+            attentionSpan?: "under-10-minutes" | "10-20-minutes" | "over-20-minutes";
+            gender?: string | null;
+            subject?: string;
+            level?: string;
         };
         CurrentUserDto: {
             /** Format: uuid */
@@ -378,6 +478,205 @@ export interface operations {
                 };
             };
             /** @description No published resource with that slug */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    LearnersController_findAll: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LearnerDto"][];
+                };
+            };
+            /** @description Request validation failed or identifier is invalid */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description A valid Auth0 access token is required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    LearnersController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateLearnerDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LearnerDto"];
+                };
+            };
+            /** @description Request validation failed or identifier is invalid */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description A valid Auth0 access token is required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    LearnersController_findOne: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                learnerId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LearnerDto"];
+                };
+            };
+            /** @description Request validation failed or identifier is invalid */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description A valid Auth0 access token is required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Mentee profile not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    LearnersController_remove: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                learnerId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Mentee profile deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Request validation failed or identifier is invalid */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description A valid Auth0 access token is required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Mentee profile not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    LearnersController_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                learnerId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateLearnerDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LearnerDto"];
+                };
+            };
+            /** @description Request validation failed or identifier is invalid */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description A valid Auth0 access token is required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Mentee profile not found */
             404: {
                 headers: {
                     [name: string]: unknown;

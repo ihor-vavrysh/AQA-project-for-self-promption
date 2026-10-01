@@ -23,7 +23,7 @@ export async function createAppConfig(config: PublicAppConfig): Promise<Applicat
           domain: config.auth0.domain,
           clientId: config.auth0.clientId,
           authorizationParams: {
-            redirect_uri: window.location.origin,
+            redirect_uri: `${window.location.origin}/`,
             audience: config.auth0.audience,
           },
         }),
