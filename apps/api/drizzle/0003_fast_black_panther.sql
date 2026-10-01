@@ -1,0 +1,1 @@
+ALTER TABLE "taxonomy_nodes" ALTER COLUMN "code" SET DATA TYPE varchar(64);

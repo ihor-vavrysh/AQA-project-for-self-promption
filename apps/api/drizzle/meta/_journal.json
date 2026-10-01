@@ -15,6 +15,20 @@
       "when": 1790867369427,
       "tag": "0001_little_retro_girl",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790878382062,
+      "tag": "0002_harsh_kree",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1790879206088,
+      "tag": "0003_fast_black_panther",
+      "breakpoints": true
     }
   ]
 }

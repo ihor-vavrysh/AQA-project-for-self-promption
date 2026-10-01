@@ -95,6 +95,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/catalog/suggestions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Suggest existing catalog resources for a learner
+         * @description Deterministic ranking with per-suggestion reasons. Age-band fit gates the score; cost can only count against a resource. Gender is not accepted and cannot influence ranking.
+         */
+        post: operations["CatalogController_suggest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/me": {
         parameters: {
             query?: never;
@@ -235,6 +255,79 @@ export interface components {
             authors: string[];
             isbn: string | null;
             capabilities: components["schemas"]["TierCapabilitiesDto"];
+        };
+        LearnerContextDto: {
+            /** @description Taxonomy node slug to suggest within */
+            node: string;
+            /** @enum {string} */
+            ageBand: "5-7" | "8-10" | "11-13" | "14-16" | "17-18";
+            /**
+             * @description BCP-47 language tag
+             * @example en-GB
+             */
+            locale: string;
+            /** @description Learner interests, from a closed vocabulary */
+            interests?: ("animals" | "art" | "baking" | "cars" | "coding" | "dance" | "dinosaurs" | "fashion" | "football" | "gaming" | "history" | "music" | "nature" | "puzzles" | "reading" | "robotics" | "science-fiction" | "space" | "sport" | "theatre")[];
+            /**
+             * @default medium
+             * @enum {string}
+             */
+            confidence: "low" | "medium" | "high";
+            /**
+             * @default step-by-step
+             * @enum {string}
+             */
+            learningPreference: "visual" | "narrative" | "step-by-step" | "challenge-first";
+            /**
+             * @description Accepted for forward compatibility; not yet used in ranking
+             * @default medium
+             * @enum {string}
+             */
+            attentionSpan: "short" | "medium" | "long";
+            /** @default false */
+            allowPaid: boolean;
+            /** @default 6 */
+            limit: number;
+            /**
+             * @description "full" also returns the factors that contributed nothing
+             * @default top
+             * @enum {string}
+             */
+            explain: "top" | "full";
+        };
+        AgeGateDto: {
+            /** @enum {string} */
+            factor: "age-band-fit";
+            /** @enum {string} */
+            level: "exact" | "adjacent" | "distant" | "none";
+            /** @description Multiplies the whole weighted sum */
+            multiplier: number;
+        };
+        SuggestionReasonDto: {
+            /** @enum {string} */
+            factor: "topic-relevance" | "interest-overlap" | "reading-level-fit" | "confidence-fit" | "media-preference" | "quality" | "cost";
+            /** @description Ordinal level for this factor, e.g. "exact" */
+            level: string;
+            /** @description Signed contribution to the score */
+            contribution: number;
+        };
+        SuggestionDto: {
+            resource: components["schemas"]["ResourceSummaryDto"];
+            score: number;
+            gate: components["schemas"]["AgeGateDto"];
+            reasons: components["schemas"]["SuggestionReasonDto"][];
+            /** @description Pushed down by a media-type or provider cap */
+            diversityCapped: boolean;
+        };
+        SuggestionListDto: {
+            items: components["schemas"]["SuggestionDto"][];
+            weightsVersion: string;
+            candidatesConsidered: number;
+            /**
+             * @description Why the list is empty; null when it is not
+             * @enum {string|null}
+             */
+            emptyCause: "no-candidates-in-subtree" | "all-filtered-by-safety-vetting" | "all-filtered-by-cost" | "all-filtered-by-language" | "all-filtered-by-missing-enrichment" | "all-suppressed-by-age-gate" | null;
         };
         CurrentUserDto: {
             /** Format: uuid */
@@ -378,6 +471,43 @@ export interface operations {
                 };
             };
             /** @description No published resource with that slug */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CatalogController_suggest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LearnerContextDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SuggestionListDto"];
+                };
+            };
+            /** @description The learner context is invalid */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No taxonomy node with that slug */
             404: {
                 headers: {
                     [name: string]: unknown;

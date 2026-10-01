@@ -6,6 +6,7 @@ const databaseUrl =
 
 export default defineConfig({
   testDir: './tests',
+  globalSetup: './global-setup.ts',
   fullyParallel: true,
   reporter: 'list',
   use: {

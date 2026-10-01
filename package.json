@@ -19,7 +19,8 @@
     "db:migrate": "pnpm --filter @tutorforge/api db:migrate",
     "api:generate": "pnpm --filter @tutorforge/shared build && pnpm --filter @tutorforge/api openapi:export && pnpm --filter @tutorforge/openapi-codegen generate",
     "api:check": "pnpm api:generate && git diff --exit-code -- apps/api/openapi.json apps/web/src/app/core/api/api.generated.ts",
-    "db:seed": "pnpm --filter @tutorforge/api build && pnpm --filter @tutorforge/api db:seed:taxonomy"
+    "db:seed": "pnpm --filter @tutorforge/api build && pnpm --filter @tutorforge/api db:seed:taxonomy",
+    "db:seed:demo": "pnpm --filter @tutorforge/api build && pnpm --filter @tutorforge/api db:seed:demo"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

@@ -1,8 +1,15 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
+  AGE_BANDS,
+  ATTENTION_SPANS,
+  CHARACTER_FIT_TAGS,
+  CONFIDENCE_LEVELS,
   COST_MODELS,
+  LEARNING_PREFERENCES,
   LICENCE_CODES,
   MEDIA_TYPES,
+  SUGGESTION_EMPTY_CAUSES,
+  SUGGESTION_FACTORS,
   TAXONOMY_SCHEMES,
   USAGE_TIERS,
 } from '@tutorforge/shared';
@@ -93,4 +100,87 @@ export class ResourceListDto {
   @ApiProperty({ type: [ResourceSummaryDto] }) items!: ResourceSummaryDto[];
   @ApiProperty() total!: number;
   @ApiProperty({ type: ResourceFacetsDto }) facets!: ResourceFacetsDto;
+}
+
+// --- Suggestions -------------------------------------------------------------
+
+export class LearnerContextDto {
+  @ApiProperty({ description: 'Taxonomy node slug to suggest within' })
+  node!: string;
+
+  @ApiProperty({ enum: AGE_BANDS }) ageBand!: string;
+
+  @ApiProperty({ example: 'en-GB', description: 'BCP-47 language tag' })
+  locale!: string;
+
+  @ApiPropertyOptional({
+    enum: CHARACTER_FIT_TAGS,
+    isArray: true,
+    description: 'Learner interests, from a closed vocabulary',
+  })
+  interests?: string[];
+
+  @ApiPropertyOptional({ enum: CONFIDENCE_LEVELS, default: 'medium' })
+  confidence?: string;
+
+  @ApiPropertyOptional({ enum: LEARNING_PREFERENCES, default: 'step-by-step' })
+  learningPreference?: string;
+
+  @ApiPropertyOptional({
+    enum: ATTENTION_SPANS,
+    default: 'medium',
+    description: 'Accepted for forward compatibility; not yet used in ranking',
+  })
+  attentionSpan?: string;
+
+  @ApiPropertyOptional({ default: false }) allowPaid?: boolean;
+
+  @ApiPropertyOptional({ default: 6, minimum: 1, maximum: 50 }) limit?: number;
+
+  @ApiPropertyOptional({
+    enum: ['top', 'full'],
+    default: 'top',
+    description: '"full" also returns the factors that contributed nothing',
+  })
+  explain?: string;
+}
+
+export class SuggestionReasonDto {
+  @ApiProperty({ enum: SUGGESTION_FACTORS }) factor!: string;
+
+  @ApiProperty({ description: 'Ordinal level for this factor, e.g. "exact"' })
+  level!: string;
+
+  @ApiProperty({ description: 'Signed contribution to the score' })
+  contribution!: number;
+}
+
+export class AgeGateDto {
+  @ApiProperty({ enum: ['age-band-fit'] }) factor!: string;
+  @ApiProperty({ enum: ['exact', 'adjacent', 'distant', 'none'] })
+  level!: string;
+  @ApiProperty({ description: 'Multiplies the whole weighted sum' })
+  multiplier!: number;
+}
+
+export class SuggestionDto {
+  @ApiProperty({ type: ResourceSummaryDto }) resource!: ResourceSummaryDto;
+  @ApiProperty() score!: number;
+  @ApiProperty({ type: AgeGateDto }) gate!: AgeGateDto;
+  @ApiProperty({ type: [SuggestionReasonDto] }) reasons!: SuggestionReasonDto[];
+  @ApiProperty({ description: 'Pushed down by a media-type or provider cap' })
+  diversityCapped!: boolean;
+}
+
+export class SuggestionListDto {
+  @ApiProperty({ type: [SuggestionDto] }) items!: SuggestionDto[];
+  @ApiProperty() weightsVersion!: string;
+  @ApiProperty() candidatesConsidered!: number;
+  @ApiProperty({
+    type: String,
+    nullable: true,
+    enum: SUGGESTION_EMPTY_CAUSES,
+    description: 'Why the list is empty; null when it is not',
+  })
+  emptyCause!: string | null;
 }

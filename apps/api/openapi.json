@@ -226,6 +226,45 @@
         ]
       }
     },
+    "/api/v1/catalog/suggestions": {
+      "post": {
+        "description": "Deterministic ranking with per-suggestion reasons. Age-band fit gates the score; cost can only count against a resource. Gender is not accepted and cannot influence ranking.",
+        "operationId": "CatalogController_suggest",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LearnerContextDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuggestionListDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The learner context is invalid"
+          },
+          "404": {
+            "description": "No taxonomy node with that slug"
+          }
+        },
+        "summary": "Suggest existing catalog resources for a learner",
+        "tags": [
+          "catalog"
+        ]
+      }
+    },
     "/api/v1/me": {
       "get": {
         "operationId": "UsersController_getMe",
@@ -698,6 +737,238 @@
           "authors",
           "isbn",
           "capabilities"
+        ]
+      },
+      "LearnerContextDto": {
+        "type": "object",
+        "properties": {
+          "node": {
+            "type": "string",
+            "description": "Taxonomy node slug to suggest within"
+          },
+          "ageBand": {
+            "type": "string",
+            "enum": [
+              "5-7",
+              "8-10",
+              "11-13",
+              "14-16",
+              "17-18"
+            ]
+          },
+          "locale": {
+            "type": "string",
+            "example": "en-GB",
+            "description": "BCP-47 language tag"
+          },
+          "interests": {
+            "type": "array",
+            "description": "Learner interests, from a closed vocabulary",
+            "items": {
+              "type": "string",
+              "enum": [
+                "animals",
+                "art",
+                "baking",
+                "cars",
+                "coding",
+                "dance",
+                "dinosaurs",
+                "fashion",
+                "football",
+                "gaming",
+                "history",
+                "music",
+                "nature",
+                "puzzles",
+                "reading",
+                "robotics",
+                "science-fiction",
+                "space",
+                "sport",
+                "theatre"
+              ]
+            }
+          },
+          "confidence": {
+            "type": "string",
+            "enum": [
+              "low",
+              "medium",
+              "high"
+            ],
+            "default": "medium"
+          },
+          "learningPreference": {
+            "type": "string",
+            "enum": [
+              "visual",
+              "narrative",
+              "step-by-step",
+              "challenge-first"
+            ],
+            "default": "step-by-step"
+          },
+          "attentionSpan": {
+            "type": "string",
+            "enum": [
+              "short",
+              "medium",
+              "long"
+            ],
+            "default": "medium",
+            "description": "Accepted for forward compatibility; not yet used in ranking"
+          },
+          "allowPaid": {
+            "type": "boolean",
+            "default": false
+          },
+          "limit": {
+            "type": "number",
+            "default": 6,
+            "minimum": 1,
+            "maximum": 50
+          },
+          "explain": {
+            "type": "string",
+            "enum": [
+              "top",
+              "full"
+            ],
+            "default": "top",
+            "description": "\"full\" also returns the factors that contributed nothing"
+          }
+        },
+        "required": [
+          "node",
+          "ageBand",
+          "locale"
+        ]
+      },
+      "AgeGateDto": {
+        "type": "object",
+        "properties": {
+          "factor": {
+            "type": "string",
+            "enum": [
+              "age-band-fit"
+            ]
+          },
+          "level": {
+            "type": "string",
+            "enum": [
+              "exact",
+              "adjacent",
+              "distant",
+              "none"
+            ]
+          },
+          "multiplier": {
+            "type": "number",
+            "description": "Multiplies the whole weighted sum"
+          }
+        },
+        "required": [
+          "factor",
+          "level",
+          "multiplier"
+        ]
+      },
+      "SuggestionReasonDto": {
+        "type": "object",
+        "properties": {
+          "factor": {
+            "type": "string",
+            "enum": [
+              "topic-relevance",
+              "interest-overlap",
+              "reading-level-fit",
+              "confidence-fit",
+              "media-preference",
+              "quality",
+              "cost"
+            ]
+          },
+          "level": {
+            "type": "string",
+            "description": "Ordinal level for this factor, e.g. \"exact\""
+          },
+          "contribution": {
+            "type": "number",
+            "description": "Signed contribution to the score"
+          }
+        },
+        "required": [
+          "factor",
+          "level",
+          "contribution"
+        ]
+      },
+      "SuggestionDto": {
+        "type": "object",
+        "properties": {
+          "resource": {
+            "$ref": "#/components/schemas/ResourceSummaryDto"
+          },
+          "score": {
+            "type": "number"
+          },
+          "gate": {
+            "$ref": "#/components/schemas/AgeGateDto"
+          },
+          "reasons": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SuggestionReasonDto"
+            }
+          },
+          "diversityCapped": {
+            "type": "boolean",
+            "description": "Pushed down by a media-type or provider cap"
+          }
+        },
+        "required": [
+          "resource",
+          "score",
+          "gate",
+          "reasons",
+          "diversityCapped"
+        ]
+      },
+      "SuggestionListDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SuggestionDto"
+            }
+          },
+          "weightsVersion": {
+            "type": "string"
+          },
+          "candidatesConsidered": {
+            "type": "number"
+          },
+          "emptyCause": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "no-candidates-in-subtree",
+              "all-filtered-by-safety-vetting",
+              "all-filtered-by-cost",
+              "all-filtered-by-language",
+              "all-filtered-by-missing-enrichment",
+              "all-suppressed-by-age-gate"
+            ],
+            "description": "Why the list is empty; null when it is not"
+          }
+        },
+        "required": [
+          "items",
+          "weightsVersion",
+          "candidatesConsidered",
+          "emptyCause"
         ]
       },
       "CurrentUserDto": {

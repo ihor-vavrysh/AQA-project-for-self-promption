@@ -1,5 +1,17 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
 import {
+  BadRequestException,
+  Body,
+  Controller,
+  Get,
+  Header,
+  HttpCode,
+  Param,
+  Post,
+  Query,
+} from '@nestjs/common';
+import {
+  ApiBadRequestResponse,
+  ApiBody,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
@@ -8,23 +20,28 @@ import {
 } from '@nestjs/swagger';
 import {
   COST_MODELS,
+  LearnerContextSchema,
   MEDIA_TYPES,
   ResourceListQuerySchema,
 } from '@tutorforge/shared';
 import type {
   ResourceDetail,
   ResourceListResponse,
+  SuggestionListResponse,
   TaxonomyNode,
   TaxonomyTreeNode,
 } from '@tutorforge/shared';
 import { Public } from '../auth/public.decorator.js';
 import {
+  LearnerContextDto,
   ResourceDetailDto,
   ResourceListDto,
+  SuggestionListDto,
   TaxonomyNodeDto,
   TaxonomyTreeNodeDto,
 } from './catalog.dto.js';
 import { CatalogService } from './catalog.service.js';
+import { SuggestionsService } from './suggestions.service.js';
 
 /**
  * The catalog is a public acquisition surface (docs/CATALOG.md §5), so these
@@ -34,7 +51,10 @@ import { CatalogService } from './catalog.service.js';
 @ApiTags('catalog')
 @Controller('api/v1/catalog')
 export class CatalogController {
-  constructor(private readonly catalog: CatalogService) {}
+  constructor(
+    private readonly catalog: CatalogService,
+    private readonly suggestions: SuggestionsService,
+  ) {}
 
   @Public()
   @Get('taxonomy')
@@ -94,5 +114,42 @@ export class CatalogController {
   @ApiNotFoundResponse({ description: 'No published resource with that slug' })
   getResource(@Param('slug') slug: string): Promise<ResourceDetail> {
     return this.catalog.getResourceBySlug(slug);
+  }
+
+  /**
+   * POST for a read, deliberately. The body carries a coarse profile of a child, and a
+   * query string would put it in access logs, CDN cache keys, browser history and the
+   * Referer of every outbound click from the results.
+   */
+  @Public()
+  @Post('suggestions')
+  // A read, despite the verb, so 200 rather than 201.
+  @HttpCode(200)
+  @Header('Cache-Control', 'no-store')
+  @Header('Referrer-Policy', 'no-referrer')
+  @ApiOperation({
+    summary: 'Suggest existing catalog resources for a learner',
+    description:
+      'Deterministic ranking with per-suggestion reasons. Age-band fit gates the score; cost can only count against a resource. Gender is not accepted and cannot influence ranking.',
+  })
+  @ApiBody({ type: LearnerContextDto })
+  @ApiOkResponse({ type: SuggestionListDto })
+  @ApiBadRequestResponse({ description: 'The learner context is invalid' })
+  @ApiNotFoundResponse({ description: 'No taxonomy node with that slug' })
+  suggest(
+    @Body() body: Record<string, unknown>,
+  ): Promise<SuggestionListResponse> {
+    const parsed = LearnerContextSchema.safeParse(body);
+
+    if (!parsed.success) {
+      throw new BadRequestException(
+        parsed.error.issues.map((issue) => ({
+          path: issue.path.join('.'),
+          message: issue.message,
+        })),
+      );
+    }
+
+    return this.suggestions.suggest(parsed.data);
   }
 }

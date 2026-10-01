@@ -2,6 +2,8 @@ import { sql } from 'drizzle-orm';
 import type { AnyPgColumn } from 'drizzle-orm/pg-core';
 import {
   boolean,
+  numeric,
+  pgView,
   check,
   index,
   integer,
@@ -17,8 +19,11 @@ import {
 } from 'drizzle-orm/pg-core';
 import {
   COST_MODELS,
+  DIFFICULTY_BANDS,
+  ENRICHMENT_SOURCES,
   LICENCE_CODES,
   MEDIA_TYPES,
+  SAFETY_VET_STATUSES,
   TAXONOMY_SCHEMES,
   USAGE_TIERS,
 } from '@tutorforge/shared';
@@ -84,7 +89,9 @@ export const taxonomyNodes = pgTable(
       },
     ),
     scheme: taxonomyScheme('scheme').notNull(),
-    code: varchar('code', { length: 32 }).notNull(),
+    // 64, not 32: wedge topic codes such as
+    // `ks4-biology-inheritance-variation-evolution` are 43 characters.
+    code: varchar('code', { length: 64 }).notNull(),
     slug: varchar('slug', { length: 160 }).notNull(),
     path: text('path').notNull(),
     depth: integer('depth').notNull(),
@@ -161,6 +168,9 @@ export const resources = pgTable(
   (table) => [
     uniqueIndex('resources_slug_key').on(table.slug),
     index('resources_media_type_idx').on(table.mediaType),
+    index('resources_published_at_idx').on(table.publishedAt),
+    index('resources_language_idx').on(table.language),
+    index('resources_cost_model_idx').on(table.costModel),
     // Each licence permits exactly one usage tier.
     check(
       'resources_licence_matches_usage_tier',
@@ -210,3 +220,107 @@ export const resourceTaxonomy = pgTable(
     index('resource_taxonomy_node_idx').on(table.nodeId),
   ],
 );
+
+// --- Suggestion enrichment (docs/CATALOG.md §4.1, docs/adr/0005) -------------
+
+export const enrichmentSource = pgEnum('enrichment_source', ENRICHMENT_SOURCES);
+export const difficultyBand = pgEnum('difficulty_band', DIFFICULTY_BANDS);
+export const safetyVetStatus = pgEnum('safety_vet_status', SAFETY_VET_STATUSES);
+
+/**
+ * Personalization signals for a resource, keyed by who produced them.
+ *
+ * Several rows per resource is the point: it is the only way to measure a model against
+ * the curator who labelled the same resource by hand. Precedence is resolved by the
+ * `resource_enrichment_current` view, and production queries read the view — joining this
+ * table without a `source` predicate fans out and double-counts a resource.
+ *
+ * The CHECK constraints mirror `checkEnrichmentProvenance` in @tutorforge/shared, the same
+ * way the `resources` constraints mirror `checkUsageRights`.
+ */
+export const resourceEnrichment = pgTable(
+  'resource_enrichment',
+  {
+    resourceId: uuid('resource_id')
+      .notNull()
+      .references(() => resources.id, { onDelete: 'cascade' }),
+    source: enrichmentSource('source').notNull(),
+    ageBandFit: text('age_band_fit').array().notNull().default([]),
+    readingLevel: integer('reading_level'),
+    readabilityScore: numeric('readability_score', { precision: 5, scale: 2 }),
+    difficulty: difficultyBand('difficulty'),
+    prerequisiteConcepts: text('prerequisite_concepts')
+      .array()
+      .notNull()
+      .default([]),
+    characterFitTags: text('character_fit_tags').array().notNull().default([]),
+    qualityScore: numeric('quality_score', { precision: 3, scale: 2 }),
+    summary: text('summary'),
+    safetyVetStatus: safetyVetStatus('safety_vet_status')
+      .default('pending')
+      .notNull(),
+    vettedBy: varchar('vetted_by', { length: 320 }),
+    vettedAt: timestamp('vetted_at', { withTimezone: true, mode: 'date' }),
+    promptVersion: varchar('prompt_version', { length: 64 }),
+    model: varchar('model', { length: 64 }),
+    inputTokens: integer('input_tokens'),
+    outputTokens: integer('output_tokens'),
+    costUsd: numeric('cost_usd', { precision: 10, scale: 6 }),
+    enrichedAt: timestamp('enriched_at', { withTimezone: true, mode: 'date' })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.resourceId, table.source] }),
+    index('resource_enrichment_age_band_idx').using('gin', table.ageBandFit),
+    index('resource_enrichment_tags_idx').using('gin', table.characterFitTags),
+    index('resource_enrichment_vet_idx').on(table.safetyVetStatus),
+    // A model-derived row must say which prompt and model produced it.
+    check(
+      'resource_enrichment_model_provenance',
+      sql`${table.source} <> 'model' or (${table.promptVersion} is not null and ${table.model} is not null)`,
+    ),
+    // A curated or deterministic row must not claim model provenance.
+    check(
+      'resource_enrichment_non_model_provenance',
+      sql`${table.source} = 'model' or (${table.promptVersion} is null and ${table.model} is null)`,
+    ),
+    // docs/CATALOG.md §4.1: nothing is surfaceable to a minor on a machine's word alone.
+    check(
+      'resource_enrichment_vetting_needs_human',
+      sql`${table.safetyVetStatus} <> 'passed'
+        or (${table.vettedBy} is not null and btrim(${table.vettedBy}) <> '')`,
+    ),
+    check(
+      'resource_enrichment_quality_range',
+      sql`${table.qualityScore} is null or (${table.qualityScore} >= 0 and ${table.qualityScore} <= 1)`,
+    ),
+    check(
+      'resource_enrichment_tag_cap',
+      sql`cardinality(${table.characterFitTags}) <= 8`,
+    ),
+  ],
+);
+
+/**
+ * One enrichment row per resource, preferring a human curator over a deterministic
+ * scorer over a model.
+ *
+ * Whole-row precedence, never per-column: coalescing columns across sources produces a
+ * record nobody reviewed, with a difficulty from one source and an age band from another,
+ * and renders the provenance columns meaningless.
+ *
+ * Declared as `.existing()` — the migration owns the SQL, because `DISTINCT ON` does not
+ * round-trip through the schema generator.
+ */
+export const resourceEnrichmentCurrent = pgView('resource_enrichment_current', {
+  resourceId: uuid('resource_id').notNull(),
+  source: enrichmentSource('source').notNull(),
+  ageBandFit: text('age_band_fit').array().notNull(),
+  readingLevel: integer('reading_level'),
+  difficulty: difficultyBand('difficulty'),
+  characterFitTags: text('character_fit_tags').array().notNull(),
+  qualityScore: numeric('quality_score', { precision: 3, scale: 2 }),
+  summary: text('summary'),
+  safetyVetStatus: safetyVetStatus('safety_vet_status').notNull(),
+}).existing();

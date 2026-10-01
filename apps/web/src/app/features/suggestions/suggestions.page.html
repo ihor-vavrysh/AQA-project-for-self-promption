@@ -1,0 +1,140 @@
+<section class="panel" aria-labelledby="suggestions-heading">
+  <p class="eyebrow">Suggestions</p>
+  <h1 id="suggestions-heading">What should this learner do next?</h1>
+  <p class="intro">
+    Ranked from the catalogue using age band, topic, reading level, interests and format. Every
+    suggestion shows why it was chosen. Gender is not collected and cannot affect the ranking.
+  </p>
+
+  <form class="profile" (submit)="onSubmit($event)">
+    <div class="field">
+      <label for="node">Topic</label>
+      <input id="node" name="node" [value]="node()" (input)="node.set($any($event.target).value)" />
+    </div>
+
+    <div class="field">
+      <label for="age-band">Age band</label>
+      <select id="age-band" name="ageBand" (change)="ageBand.set($any($event.target).value)">
+        @for (band of ageBands; track band) {
+          <option [value]="band" [selected]="band === ageBand()">{{ band }}</option>
+        }
+      </select>
+    </div>
+
+    <div class="field">
+      <label for="locale">Language</label>
+      <input
+        id="locale"
+        name="locale"
+        [value]="locale()"
+        (input)="locale.set($any($event.target).value)"
+      />
+    </div>
+
+    <div class="field">
+      <label for="confidence">Confidence</label>
+      <select
+        id="confidence"
+        name="confidence"
+        (change)="confidence.set($any($event.target).value)"
+      >
+        @for (level of confidenceLevels; track level) {
+          <option [value]="level" [selected]="level === confidence()">{{ level }}</option>
+        }
+      </select>
+    </div>
+
+    <div class="field">
+      <label for="learning-preference">Learning preference</label>
+      <select
+        id="learning-preference"
+        name="learningPreference"
+        (change)="learningPreference.set($any($event.target).value)"
+      >
+        @for (preference of learningPreferences; track preference) {
+          <option [value]="preference" [selected]="preference === learningPreference()">
+            {{ preference }}
+          </option>
+        }
+      </select>
+    </div>
+
+    <fieldset class="interests">
+      <legend>Interests</legend>
+      @for (interest of interestOptions; track interest) {
+        <button
+          type="button"
+          class="chip"
+          [class.chip-on]="isSelected(interest)"
+          [attr.aria-pressed]="isSelected(interest)"
+          (click)="toggleInterest(interest)"
+        >
+          {{ interest }}
+        </button>
+      }
+    </fieldset>
+
+    <label class="checkbox">
+      <input
+        type="checkbox"
+        name="allowPaid"
+        [checked]="allowPaid()"
+        (change)="allowPaid.set($any($event.target).checked)"
+      />
+      Include paid resources
+    </label>
+
+    <button class="button button-primary" type="submit" [disabled]="loading()">
+      {{ loading() ? 'Finding…' : 'Suggest resources' }}
+    </button>
+  </form>
+
+  @if (error()) {
+    <p class="error" role="alert">{{ error() }}</p>
+  }
+
+  @if (result()) {
+    <div class="results" role="region" aria-live="polite" aria-label="Suggested resources">
+      @if (items().length === 0) {
+        <p class="notice" role="status">
+          {{ emptyCause() ? emptyCauseLabel(emptyCause()!) : 'No suggestions.' }}
+        </p>
+      } @else {
+        <p class="meta">
+          {{ items().length }} of {{ result()!.candidatesConsidered }} considered &middot; weights
+          v{{ result()!.weightsVersion }}
+        </p>
+        <ol class="suggestion-list">
+          @for (item of items(); track item.resource.slug) {
+            <li class="suggestion">
+              <div class="suggestion-head">
+                <h2>{{ item.resource.title }}</h2>
+                <span class="score" [attr.aria-label]="'Score ' + item.score">
+                  {{ item.score }}
+                </span>
+              </div>
+              <p class="provider">
+                {{ item.resource.mediaType }} &middot; {{ item.resource.provider }} &middot;
+                {{ item.resource.costModel }}
+              </p>
+              @if (item.resource.description) {
+                <p class="description">{{ item.resource.description }}</p>
+              }
+              <ul class="reasons">
+                <li class="reason reason-gate">{{ gateLabel(item) }}</li>
+                @for (reason of item.reasons; track reason.factor) {
+                  <li class="reason" [class.reason-penalty]="isPenalty(reason)">
+                    {{ reasonLabel(reason) }}
+                  </li>
+                }
+                @if (item.diversityCapped) {
+                  <li class="reason reason-note">Shown for variety</li>
+                }
+              </ul>
+            </li>
+          }
+        </ol>
+      }
+    </div>
+  }
+</section>

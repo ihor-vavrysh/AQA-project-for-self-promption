@@ -34,6 +34,26 @@ export class ApiClientService {
     }
   }
 
+  /**
+   * POST for a read: the body carries a coarse learner profile, which must not end up in
+   * access logs, cache keys or the Referer header.
+   */
+  async getSuggestions(
+    body: components['schemas']['LearnerContextDto'],
+  ): Promise<components['schemas']['SuggestionListDto']> {
+    const result = await this.client.POST('/api/v1/catalog/suggestions', { body });
+
+    if (!result.response.ok) {
+      throw new Error(`Could not load suggestions: ${result.response.status}`);
+    }
+
+    if (!result.data) {
+      throw new Error('API returned no suggestions payload');
+    }
+
+    return result.data;
+  }
+
   async getCurrentUser(): Promise<components['schemas']['CurrentUserDto']> {
     const result = await this.authenticatedClient.GET('/api/v1/me');
 

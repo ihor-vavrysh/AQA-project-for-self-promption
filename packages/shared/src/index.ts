@@ -1,3 +1,4 @@
+export * from './suggestions.js';
 export * from './catalog.js';
 
 import { z } from 'zod';

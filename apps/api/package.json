@@ -18,7 +18,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "vitest run --config ./vitest.config.e2e.ts",
-    "db:seed:taxonomy": "node dist/catalog/seed-taxonomy.js"
+    "db:seed:taxonomy": "node dist/catalog/seed-taxonomy.js",
+    "db:seed:demo": "node dist/catalog/seed-demo.js"
   },
   "dependencies": {
     "@nestjs/common": "^12.1.2",

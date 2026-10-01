@@ -200,7 +200,7 @@ export function isNodePublishable(depth: NodeDepth): boolean {
 
 // --- Schemas ----------------------------------------------------------------
 
-const SlugSchema = z
+export const SlugSchema = z
   .string()
   .min(1)
   .max(160)
@@ -217,7 +217,7 @@ export const TaxonomyNodeSchema = z.object({
   id: z.uuid(),
   parentId: z.uuid().nullable(),
   scheme: TaxonomySchemeSchema,
-  code: z.string().min(1).max(32),
+  code: z.string().min(1).max(64),
   slug: SlugSchema,
   path: z.string().min(1),
   depth: z.number().int().min(0),
