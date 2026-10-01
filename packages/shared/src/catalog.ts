@@ -333,6 +333,24 @@ export const ResourceListResponseSchema = z.object({
 });
 export type ResourceListResponse = z.infer<typeof ResourceListResponseSchema>;
 
+export const TopicDemandRequestSchema = z.object({
+  requestedBy: z.string().trim().min(1).max(160).optional(),
+});
+export type TopicDemandRequest = z.infer<typeof TopicDemandRequestSchema>;
+
+export const TopicDemandSummarySchema = z.object({
+  slug: SlugSchema,
+  count: z.number().int().min(1),
+  requestedBy: z.string().max(160).nullable(),
+  requestedAt: z.iso.datetime(),
+});
+export type TopicDemandSummary = z.infer<typeof TopicDemandSummarySchema>;
+
+export const TopicDemandEventSchema = TopicDemandSummarySchema.extend({
+  nodeSlug: SlugSchema,
+});
+export type TopicDemandEvent = z.infer<typeof TopicDemandEventSchema>;
+
 /**
  * The outbound URL a tutor or visitor should follow: the affiliate link when the
  * tier permits one, the canonical provider URL otherwise.

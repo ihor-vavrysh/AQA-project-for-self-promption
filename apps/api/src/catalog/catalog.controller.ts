@@ -1,5 +1,6 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 import {
+  ApiCreatedResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
@@ -10,6 +11,7 @@ import {
   COST_MODELS,
   MEDIA_TYPES,
   ResourceListQuerySchema,
+  TopicDemandRequestSchema,
 } from '@tutorforge/shared';
 import type {
   ResourceDetail,
@@ -23,6 +25,8 @@ import {
   ResourceListDto,
   TaxonomyNodeDto,
   TaxonomyTreeNodeDto,
+  TopicDemandEventDto,
+  TopicDemandSummaryDto,
 } from './catalog.dto.js';
 import { CatalogService } from './catalog.service.js';
 
@@ -94,5 +98,41 @@ export class CatalogController {
   @ApiNotFoundResponse({ description: 'No published resource with that slug' })
   getResource(@Param('slug') slug: string): Promise<ResourceDetail> {
     return this.catalog.getResourceBySlug(slug);
+  }
+
+  @Public()
+  @Get('demand')
+  @ApiOperation({
+    summary: 'List the most-requested uncovered topics',
+    description:
+      'Returns aggregate topic demand, sorted by total requests so the product can prioritise what to publish next.',
+  })
+  @ApiOkResponse({ type: [TopicDemandSummaryDto] })
+  listDemand(): Promise<
+    Array<{ slug: string; count: number; requestedBy: string | null; requestedAt: string }>
+  > {
+    return this.catalog.listTopicDemand();
+  }
+
+  @Public()
+  @Post('nodes/:slug/request')
+  @ApiOperation({
+    summary: 'Register a request for a topic that is not yet covered',
+    description:
+      'Tracks demand for a taxonomy node so the product can decide where to light the next content wedge.',
+  })
+  @ApiCreatedResponse({ type: TopicDemandEventDto })
+  @ApiNotFoundResponse({ description: 'No node with that slug' })
+  registerTopicDemand(
+    @Param('slug') slug: string,
+    @Body() body: Record<string, unknown> = {},
+  ): Promise<{
+    nodeSlug: string;
+    requestedBy: string;
+    requestedAt: string;
+    count: number;
+  }> {
+    const payload = TopicDemandRequestSchema.parse(body);
+    return this.catalog.recordTopicDemand(slug, payload.requestedBy);
   }
 }

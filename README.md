@@ -119,12 +119,16 @@ refuses any row the application layer would reject.
 Taxonomy nodes stay unpublished until they pass the depth gate (12 resources
 across 3 media types), so navigation never presents a topic as covered when it
 is not. `CatalogService.refreshDepthGate()` recomputes the counters and is
-idempotent.
+idempotent. Uncovered nodes also support a demand signal: the public request
+button records demand and the product can prioritise light-up work from the most
+requested topic clusters.
 
 | Endpoint                              | Purpose                                                          |
 | ------------------------------------- | ---------------------------------------------------------------- |
 | `GET /api/v1/catalog/taxonomy`        | Browse the tree; published nodes and their ancestors by default  |
 | `GET /api/v1/catalog/nodes/:slug`     | One taxonomy node                                                |
+| `POST /api/v1/catalog/nodes/:slug/request` | Register a demand signal for an uncovered topic          |
+| `GET /api/v1/catalog/demand`           | Sort the most requested topics by request volume                 |
 | `GET /api/v1/catalog/resources`       | Published resources with facet counts; `node` filters by subtree |
 | `GET /api/v1/catalog/resources/:slug` | One published resource with its tier capabilities                |
 

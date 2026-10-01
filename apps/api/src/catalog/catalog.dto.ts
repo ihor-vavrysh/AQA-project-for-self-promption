@@ -94,3 +94,23 @@ export class ResourceListDto {
   @ApiProperty() total!: number;
   @ApiProperty({ type: ResourceFacetsDto }) facets!: ResourceFacetsDto;
 }
+
+export class TopicDemandRequestDto {
+  @ApiProperty({
+    type: String,
+    required: false,
+    description: 'Optional identifier such as an email or session handle',
+  })
+  requestedBy?: string;
+}
+
+export class TopicDemandSummaryDto {
+  @ApiProperty() slug!: string;
+  @ApiProperty() count!: number;
+  @ApiProperty({ type: String, nullable: true }) requestedBy!: string | null;
+  @ApiProperty({ type: String, format: 'date-time' }) requestedAt!: string;
+}
+
+export class TopicDemandEventDto extends TopicDemandSummaryDto {
+  @ApiProperty() nodeSlug!: string;
+}

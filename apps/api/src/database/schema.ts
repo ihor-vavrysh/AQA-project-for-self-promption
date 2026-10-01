@@ -163,6 +163,35 @@ export const taxonomyNodes = pgTable(
   ],
 );
 
+export const topicDemand = pgTable(
+  'topic_demand',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    nodeId: uuid('node_id')
+      .notNull()
+      .references(() => taxonomyNodes.id, { onDelete: 'cascade' }),
+    requestedBy: varchar('requested_by', { length: 160 }).notNull(),
+    requestedAt: timestamp('requested_at', {
+      withTimezone: true,
+      mode: 'date',
+    })
+      .defaultNow()
+      .notNull(),
+    count: integer('count').default(1).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    uniqueIndex('topic_demand_node_requested_by_key').on(
+      table.nodeId,
+      table.requestedBy,
+    ),
+    index('topic_demand_node_idx').on(table.nodeId),
+    check('topic_demand_count_positive', sql`${table.count} > 0`),
+  ],
+);
+
 /**
  * Third-party material. `licence` and `usage_tier` are mandatory and the CHECK
  * constraints below mirror `checkUsageRights` in @tutorforge/shared, so the

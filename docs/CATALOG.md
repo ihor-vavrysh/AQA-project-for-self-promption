@@ -47,7 +47,15 @@ gate a node renders as an explicit "not covered yet — request this topic" stat
 
 That request button is not a consolation prize. It is **free demand discovery**: it tells
 you which categories tutors actually want before you spend a week ingesting them. The
-cold-start problem becomes a market-research instrument. Build that button in Phase 2a.
+cold-start problem becomes a market-research instrument. Build that button in Phase 2a,
+and store the result as a persisted `topic_demand` signal so the next wedge is prioritised
+by evidence, not instinct.
+
+Three product red lines keep the plan honest:
+
+- no learner-facing accounts or content hosting before the tutor workflow is proven;
+- no public indexing before the node passes the depth gate;
+- no connector automation before the manual wedge proves the matching quality and trust loop.
 
 ### 1.3 The depth gate is also an SEO requirement
 

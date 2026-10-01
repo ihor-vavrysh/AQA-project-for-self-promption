@@ -3,6 +3,7 @@ import {
   and,
   asc,
   count,
+  desc,
   eq,
   inArray,
   isNotNull,
@@ -36,6 +37,7 @@ import {
   resourceTaxonomy,
   resources,
   taxonomyNodes,
+  topicDemand,
 } from '../database/schema.js';
 
 export interface UsageRightsAuditEntry {
@@ -164,6 +166,78 @@ export class CatalogService {
       authors: row.authors,
       isbn: row.isbn,
       capabilities,
+    });
+  }
+
+  async recordTopicDemand(
+    nodeSlug: string,
+    requestedBy?: string,
+  ): Promise<{
+    nodeSlug: string;
+    requestedBy: string;
+    requestedAt: string;
+    count: number;
+  }> {
+    const node = await this.getNodeBySlug(nodeSlug);
+    const resolvedRequestedBy = (requestedBy ?? 'anonymous').trim() || 'anonymous';
+
+    const [row] = await this.database.db
+      .insert(topicDemand)
+      .values({
+        nodeId: node.id,
+        requestedBy: resolvedRequestedBy,
+        requestedAt: new Date(),
+        count: 1,
+      })
+      .onConflictDoUpdate({
+        target: [topicDemand.nodeId, topicDemand.requestedBy],
+        set: {
+          count: sql`${topicDemand.count} + 1`,
+          requestedAt: new Date(),
+        },
+      })
+      .returning();
+
+    const requestedAt =
+      row!.requestedAt instanceof Date
+        ? row!.requestedAt
+        : new Date(row!.requestedAt as string | Date);
+
+    return {
+      nodeSlug: node.slug,
+      requestedBy: row!.requestedBy,
+      requestedAt: requestedAt.toISOString(),
+      count: Number(row!.count),
+    };
+  }
+
+  async listTopicDemand(): Promise<
+    Array<{ slug: string; count: number; requestedBy: string | null; requestedAt: string }>
+  > {
+    const rows = await this.database.db
+      .select({
+        slug: taxonomyNodes.slug,
+        count: sql<number>`sum(${topicDemand.count})::int`,
+        requestedBy: sql<string | null>`max(${topicDemand.requestedBy})`,
+        requestedAt: sql<Date>`max(${topicDemand.requestedAt})`,
+      })
+      .from(topicDemand)
+      .innerJoin(taxonomyNodes, eq(taxonomyNodes.id, topicDemand.nodeId))
+      .groupBy(taxonomyNodes.id, taxonomyNodes.slug)
+      .orderBy(desc(sql`sum(${topicDemand.count})`));
+
+    return rows.map((row) => {
+      const requestedAt =
+        row.requestedAt instanceof Date
+          ? row.requestedAt
+          : new Date(row.requestedAt as string | Date);
+
+      return {
+        slug: row.slug,
+        count: Number(row.count),
+        requestedBy: row.requestedBy ?? null,
+        requestedAt: requestedAt.toISOString(),
+      };
     });
   }
 
