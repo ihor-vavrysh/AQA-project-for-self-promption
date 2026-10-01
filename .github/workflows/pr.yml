@@ -1,0 +1,157 @@
+name: PR checks
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Static checks, build, and unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.6.5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm format:check
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm api:check
+        env:
+          DATABASE_URL: postgres://tutorforge:tutorforge_dev@127.0.0.1:5432/tutorforge
+          AUTH0_DOMAIN: tenant.example.test
+          AUTH0_AUDIENCE: https://api.tutorforge.test
+      - run: pnpm build
+      - run: pnpm test
+
+  integration:
+    name: PostgreSQL integration tests
+    runs-on: ubuntu-latest
+    env:
+      AUTH0_DOMAIN: tenant.example.test
+      AUTH0_AUDIENCE: https://api.tutorforge.test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.6.5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test:integration
+
+  e2e:
+    name: Playwright walking skeleton
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: tutorforge
+          POSTGRES_USER: tutorforge
+          POSTGRES_PASSWORD: tutorforge_dev
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U tutorforge -d tutorforge"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgres://tutorforge:tutorforge_dev@127.0.0.1:5432/tutorforge
+      AUTH0_DOMAIN: tenant.example.test
+      AUTH0_AUDIENCE: https://api.tutorforge.test
+      CI: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.6.5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @tutorforge/e2e exec playwright install --with-deps chromium
+      - run: pnpm test:e2e
+
+  container-build:
+    name: Build staging containers
+    needs: quality
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build API image
+        run: docker build --file apps/api/Dockerfile --tag tutorforge-api:ci .
+      - name: Build web image
+        run: |
+          docker build --file apps/web/Dockerfile --tag tutorforge-web:ci \
+            --build-arg API_HOST=tutorforge-api-staging.internal:3000 \
+            --build-arg AUTH0_DOMAIN=tenant.example.test \
+            --build-arg AUTH0_CLIENT_ID=ci-public-client \
+            --build-arg AUTH0_AUDIENCE=https://api.tutorforge.test .
+
+  deploy-api:
+    name: Deploy API to staging
+    needs: [quality, integration, e2e, container-build]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    environment: staging
+    runs-on: ubuntu-latest
+    env:
+      FLY_API_TOKEN: ${{ secrets.FLY_API_DEPLOY_TOKEN }}
+      FLY_API_APP: ${{ vars.FLY_API_APP }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: superfly/flyctl-actions/setup-flyctl@ed8efb33836e8b2096c7fd3ba1c8afe303ebbff1
+      - name: Validate staging configuration
+        run: |
+          test -n "$FLY_API_TOKEN" || { echo "::error::Set the FLY_API_DEPLOY_TOKEN staging secret"; exit 1; }
+          test -n "$FLY_API_APP" || { echo "::error::Set the FLY_API_APP staging variable"; exit 1; }
+      - run: flyctl deploy --remote-only --config apps/api/fly.toml --app "$FLY_API_APP"
+
+  deploy-web:
+    name: Deploy web app to staging
+    needs: deploy-api
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    environment: staging
+    runs-on: ubuntu-latest
+    env:
+      FLY_API_TOKEN: ${{ secrets.FLY_WEB_DEPLOY_TOKEN }}
+      FLY_API_APP: ${{ vars.FLY_API_APP }}
+      FLY_WEB_APP: ${{ vars.FLY_WEB_APP }}
+      AUTH0_DOMAIN: ${{ vars.AUTH0_DOMAIN }}
+      AUTH0_CLIENT_ID: ${{ vars.AUTH0_CLIENT_ID }}
+      AUTH0_AUDIENCE: ${{ vars.AUTH0_AUDIENCE }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: superfly/flyctl-actions/setup-flyctl@ed8efb33836e8b2096c7fd3ba1c8afe303ebbff1
+      - name: Validate staging configuration
+        run: |
+          test -n "$FLY_API_TOKEN" || { echo "::error::Set the FLY_WEB_DEPLOY_TOKEN staging secret"; exit 1; }
+          test -n "$FLY_API_APP" || { echo "::error::Set the FLY_API_APP staging variable"; exit 1; }
+          test -n "$FLY_WEB_APP" || { echo "::error::Set the FLY_WEB_APP staging variable"; exit 1; }
+          test -n "$AUTH0_DOMAIN" || { echo "::error::Set the AUTH0_DOMAIN staging variable"; exit 1; }
+          test -n "$AUTH0_CLIENT_ID" || { echo "::error::Set the AUTH0_CLIENT_ID staging variable"; exit 1; }
+          test -n "$AUTH0_AUDIENCE" || { echo "::error::Set the AUTH0_AUDIENCE staging variable"; exit 1; }
+      - name: Deploy web application
+        run: |
+          flyctl deploy --remote-only --config apps/web/fly.toml --app "$FLY_WEB_APP" \
+            --build-arg "API_HOST=${FLY_API_APP}.internal:3000" \
+            --build-arg "AUTH0_DOMAIN=$AUTH0_DOMAIN" \
+            --build-arg "AUTH0_CLIENT_ID=$AUTH0_CLIENT_ID" \
+            --build-arg "AUTH0_AUDIENCE=$AUTH0_AUDIENCE"

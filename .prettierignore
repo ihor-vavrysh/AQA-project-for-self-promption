@@ -1,0 +1,10 @@
+node_modules/
+dist/
+coverage/
+.turbo/
+**/.angular/**
+pnpm-lock.yaml
+PLAN.md
+hello.html
+apps/web/src/app/core/api/api.generated.ts
+apps/api/openapi.json

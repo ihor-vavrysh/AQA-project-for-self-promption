@@ -1,0 +1,16 @@
+{
+  "name": "@tutorforge/shared",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc --build",
+    "typecheck": "tsc --build --pretty false",
+    "test": "node --test test/foundation.test.mjs"
+  },
+  "dependencies": {
+    "zod": "^4.0.1"
+  }
+}
