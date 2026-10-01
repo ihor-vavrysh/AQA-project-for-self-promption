@@ -36,7 +36,7 @@ describe('App', () => {
     const fixture = TestBed.createComponent(App);
     await fixture.whenStable();
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('h1')?.textContent).toContain('Make every lesson');
+    expect(compiled.querySelector('a[routerLink="/learners"]')?.textContent).toContain('Mentees');
     expect(compiled.querySelector('button')?.disabled).toBe(true);
   });
 });

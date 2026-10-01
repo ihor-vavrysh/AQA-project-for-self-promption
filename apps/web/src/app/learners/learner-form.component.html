@@ -1,0 +1,130 @@
+<main class="editor">
+  <a class="back-link" routerLink="/learners">← Back to mentees</a>
+  <header>
+    <p class="eyebrow">Tutor-managed profile</p>
+    <h1>{{ isEditing() ? 'Mentee profile' : 'Add a mentee' }}</h1>
+    <p class="intro">
+      Use a pseudonym only. Do not add a real name, email, date of birth, or other identifying
+      information.
+    </p>
+  </header>
+
+  @if (loading()) {
+    <p class="status" role="status">Loading profile…</p>
+  } @else {
+    @if (error()) {
+      <p class="error" role="alert">{{ error() }}</p>
+    }
+
+    <form [formGroup]="form" (ngSubmit)="save()">
+      <section class="form-section" aria-labelledby="profile-heading">
+        <h2 id="profile-heading">Profile</h2>
+        <label>
+          Pseudonym
+          <input formControlName="pseudonym" autocomplete="off" maxlength="40" required />
+          <span class="hint">For example, “Learner 01” — never use a real name.</span>
+        </label>
+        <div class="field-row">
+          <label>
+            Age band
+            <select formControlName="ageBand">
+              @for (ageBand of ageBands; track ageBand) {
+                <option [value]="ageBand">{{ ageBand }}</option>
+              }
+            </select>
+          </label>
+          <label>
+            Gender (optional)
+            <input formControlName="gender" maxlength="64" autocomplete="off" />
+            <span class="hint">Representation only; leave blank if not provided.</span>
+          </label>
+        </div>
+      </section>
+
+      <section class="form-section" aria-labelledby="curriculum-heading">
+        <h2 id="curriculum-heading">Learning context</h2>
+        <div class="field-row">
+          <label>
+            Locale
+            <input formControlName="locale" maxlength="20" placeholder="en-GB" required />
+          </label>
+          <label>
+            Curriculum code
+            <input formControlName="curriculumCode" maxlength="40" placeholder="KS3" required />
+          </label>
+        </div>
+        <div class="field-row">
+          <label>
+            Subject
+            <input formControlName="subject" maxlength="80" required />
+          </label>
+          <label>
+            Level
+            <input formControlName="level" maxlength="80" required />
+          </label>
+        </div>
+      </section>
+
+      <section class="form-section" aria-labelledby="preferences-heading">
+        <h2 id="preferences-heading">Learning preferences</h2>
+        <label>
+          Interests
+          <input
+            formControlName="interests"
+            autocomplete="off"
+            placeholder="Space, music, football"
+          />
+          <span class="hint">Optional; separate up to 10 interests with commas.</span>
+        </label>
+        <div class="field-row">
+          <label>
+            Learning preference
+            <select formControlName="learningPreference">
+              @for (preference of learningPreferences; track preference.value) {
+                <option [value]="preference.value">{{ preference.label }}</option>
+              }
+            </select>
+          </label>
+          <label>
+            Confidence
+            <select formControlName="confidenceLevel">
+              @for (confidence of confidenceLevels; track confidence.value) {
+                <option [value]="confidence.value">{{ confidence.label }}</option>
+              }
+            </select>
+          </label>
+        </div>
+        <label>
+          Attention span
+          <select formControlName="attentionSpan">
+            @for (span of attentionSpans; track span.value) {
+              <option [value]="span.value">{{ span.label }}</option>
+            }
+          </select>
+        </label>
+      </section>
+
+      <div class="actions">
+        <button class="button button-primary" type="submit" [disabled]="saving()">
+          {{ saving() ? 'Saving…' : isEditing() ? 'Save changes' : 'Create profile' }}
+        </button>
+        @if (isEditing()) {
+          <button
+            class="button button-danger"
+            type="button"
+            [disabled]="saving()"
+            (click)="delete()"
+          >
+            {{ confirmingDelete() ? 'Confirm delete' : 'Delete profile' }}
+          </button>
+          @if (confirmingDelete()) {
+            <span class="hint" role="status"
+              >Select “Confirm delete” to permanently remove this profile.</span
+            >
+          }
+        }
+        <a class="cancel-link" routerLink="/learners">Cancel</a>
+      </div>
+    </form>
+  }
+</main>

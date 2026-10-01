@@ -15,7 +15,7 @@ export class Auth0Port implements AuthPort {
 
   logout() {
     return this.auth.logout({
-      logoutParams: { returnTo: window.location.origin },
+      logoutParams: { returnTo: `${window.location.origin}/` },
     });
   }
 

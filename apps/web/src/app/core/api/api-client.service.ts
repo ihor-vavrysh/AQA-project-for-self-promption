@@ -47,4 +47,82 @@ export class ApiClientService {
 
     return result.data;
   }
+
+  async getLearners(): Promise<components['schemas']['LearnerDto'][]> {
+    const result = await this.authenticatedClient.GET('/api/v1/learners');
+
+    if (!result.response.ok) {
+      throw new Error(`Could not load mentee profiles: ${result.response.status}`);
+    }
+
+    if (!result.data) {
+      throw new Error('API returned no mentee profile list');
+    }
+
+    return result.data;
+  }
+
+  async getLearner(learnerId: string): Promise<components['schemas']['LearnerDto']> {
+    const result = await this.authenticatedClient.GET('/api/v1/learners/{learnerId}', {
+      params: { path: { learnerId } },
+    });
+
+    if (!result.response.ok) {
+      throw new Error(`Could not load the mentee profile: ${result.response.status}`);
+    }
+
+    if (!result.data) {
+      throw new Error('API returned no mentee profile');
+    }
+
+    return result.data;
+  }
+
+  async createLearner(
+    profile: components['schemas']['CreateLearnerDto'],
+  ): Promise<components['schemas']['LearnerDto']> {
+    const result = await this.authenticatedClient.POST('/api/v1/learners', {
+      body: profile,
+    });
+
+    if (!result.response.ok) {
+      throw new Error(`Could not create the mentee profile: ${result.response.status}`);
+    }
+
+    if (!result.data) {
+      throw new Error('API returned no created mentee profile');
+    }
+
+    return result.data;
+  }
+
+  async updateLearner(
+    learnerId: string,
+    profile: components['schemas']['UpdateLearnerDto'],
+  ): Promise<components['schemas']['LearnerDto']> {
+    const result = await this.authenticatedClient.PATCH('/api/v1/learners/{learnerId}', {
+      params: { path: { learnerId } },
+      body: profile,
+    });
+
+    if (!result.response.ok) {
+      throw new Error(`Could not update the mentee profile: ${result.response.status}`);
+    }
+
+    if (!result.data) {
+      throw new Error('API returned no updated mentee profile');
+    }
+
+    return result.data;
+  }
+
+  async deleteLearner(learnerId: string): Promise<void> {
+    const result = await this.authenticatedClient.DELETE('/api/v1/learners/{learnerId}', {
+      params: { path: { learnerId } },
+    });
+
+    if (!result.response.ok) {
+      throw new Error(`Could not delete the mentee profile: ${result.response.status}`);
+    }
+  }
 }

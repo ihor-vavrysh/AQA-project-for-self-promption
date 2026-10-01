@@ -8,6 +8,13 @@
       "when": 1790849386067,
       "tag": "0000_dapper_peter_parker",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1790865744687,
+      "tag": "0001_curious_korvac",
+      "breakpoints": true
     }
   ]
 }
