@@ -1,0 +1,105 @@
+:host {
+  display: block;
+}
+
+.catalog-page {
+  width: min(1100px, calc(100vw - 2rem));
+  margin: 0 auto;
+  padding: 2rem 0 3rem;
+}
+
+.page-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.eyebrow {
+  margin: 0 0 0.45rem;
+  color: #446f63;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+h1 {
+  margin: 0;
+  color: #153f39;
+  font-size: clamp(2rem, 3vw, 3rem);
+  letter-spacing: -0.06em;
+}
+
+.intro {
+  margin: 0.7rem 0 0;
+  color: #415f5a;
+  line-height: 1.6;
+}
+
+.taxonomy-root {
+  display: grid;
+  gap: 1rem;
+}
+
+.taxonomy-node {
+  padding: 1.25rem 1.25rem 1rem;
+  border: 1px solid #dfe6df;
+  border-radius: 1rem;
+  background: #fff;
+  box-shadow: 0 8px 20px rgba(21, 63, 57, 0.04);
+}
+
+.taxonomy-node h2 {
+  margin: 0 0 0.9rem;
+  color: #153f39;
+  font-size: 1.2rem;
+}
+
+.taxonomy-children,
+.taxonomy-children ul {
+  margin: 0;
+  padding-left: 1.2rem;
+  color: #345550;
+}
+
+.taxonomy-children > li,
+.taxonomy-children li {
+  margin: 0.5rem 0;
+  line-height: 1.5;
+}
+
+.topic-label {
+  font-weight: 600;
+}
+
+.status,
+.error {
+  margin: 0;
+  padding: 1rem 1.1rem;
+  border-radius: 0.75rem;
+}
+
+.status {
+  background: #eef5ef;
+  color: #264e46;
+}
+
+.error {
+  border: 1px solid #e8b8ae;
+  background: #fff1ee;
+  color: #832c1e;
+}
+
+@media (max-width: 700px) {
+  .catalog-page {
+    width: min(100vw - 1rem, 100%);
+    padding-top: 1.25rem;
+  }
+
+  .page-heading {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

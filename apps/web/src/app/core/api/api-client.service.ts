@@ -48,6 +48,22 @@ export class ApiClientService {
     return result.data;
   }
 
+  async getTaxonomyTree(): Promise<components['schemas']['TaxonomyTreeNodeDto'][]> {
+    const result = await this.client.GET('/api/v1/catalog/taxonomy', {
+      params: { query: { includeUnpublished: true } },
+    });
+
+    if (!result.response.ok) {
+      throw new Error(`Could not load the catalog taxonomy: ${result.response.status}`);
+    }
+
+    if (!result.data) {
+      throw new Error('API returned no taxonomy tree');
+    }
+
+    return result.data;
+  }
+
   async getLearners(): Promise<components['schemas']['LearnerDto'][]> {
     const result = await this.authenticatedClient.GET('/api/v1/learners');
 

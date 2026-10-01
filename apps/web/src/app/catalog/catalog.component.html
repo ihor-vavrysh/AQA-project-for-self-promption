@@ -1,0 +1,43 @@
+<main class="catalog-page">
+  <header class="page-heading">
+    <div>
+      <p class="eyebrow">Content catalog</p>
+      <h1>Topics and categories</h1>
+      <p class="intro">
+        Browse the taxonomy by subject and stage. Published nodes show the content that is ready to use.
+      </p>
+    </div>
+  </header>
+
+  @if (error()) {
+    <p class="error" role="alert">{{ error() }}</p>
+  } @else if (loading()) {
+    <p class="status" role="status">Loading taxonomy…</p>
+  } @else {
+    <section class="taxonomy-root">
+      @for (node of taxonomy(); track node.id) {
+        <article class="taxonomy-node">
+          <h2>{{ label(node) }}</h2>
+          @if (node.children.length > 0) {
+            <ul class="taxonomy-children">
+              @for (child of node.children; track child.id) {
+                <li>
+                  <span class="topic-label">{{ label(child) }}</span>
+                  @if (child.children.length > 0) {
+                    <ul>
+                      @for (grandchild of child.children; track grandchild.id) {
+                        <li>
+                          <span class="topic-label">{{ label(grandchild) }}</span>
+                        </li>
+                      }
+                    </ul>
+                  }
+                </li>
+              }
+            </ul>
+          }
+        </article>
+      }
+    </section>
+  }
+</main>

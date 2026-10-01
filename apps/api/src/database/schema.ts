@@ -134,7 +134,7 @@ export const taxonomyNodes = pgTable(
       },
     ),
     scheme: taxonomyScheme('scheme').notNull(),
-    code: varchar('code', { length: 32 }).notNull(),
+    code: varchar('code', { length: 160 }).notNull(),
     slug: varchar('slug', { length: 160 }).notNull(),
     path: text('path').notNull(),
     depth: integer('depth').notNull(),
