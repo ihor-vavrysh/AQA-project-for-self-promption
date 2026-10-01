@@ -7,10 +7,27 @@
         Keep a minimal, pseudonymous profile for each mentee. Mentees do not sign in to TutorForge.
       </p>
     </div>
-    <a class="button button-primary" routerLink="/learners/new">Add mentee</a>
+    @if (authenticated()) {
+      <a class="button button-primary" routerLink="/learners/new">Add mentee</a>
+    }
   </header>
 
-  @if (error()) {
+  @if (!authConfigured) {
+    <p class="error" role="alert">
+      Auth0 is not configured. Add the tenant domain, client ID, and API audience to
+      <code>public/app-config.json</code>.
+    </p>
+  } @else if (!authenticated()) {
+    <section class="empty-state sign-in-state">
+      <h2>Sign in to view your roster</h2>
+      <p>Your mentee profiles are private to your tutor account.</p>
+      @if (loginError()) {
+        <p class="error" role="alert">{{ loginError() }}</p>
+      }
+      <button class="button button-primary" type="button" (click)="signIn()">Sign in</button>
+      <button class="button button-quiet" type="button" (click)="signUp()">Sign up</button>
+    </section>
+  } @else if (error()) {
     <p class="error" role="alert">{{ error() }}</p>
   } @else if (loading()) {
     <p class="status" role="status">Loading mentee profiles…</p>

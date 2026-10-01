@@ -8,9 +8,16 @@ export class Auth0Port implements AuthPort {
   private readonly auth = inject(AuthService);
   readonly configured = true;
   readonly isAuthenticated$ = this.auth.isAuthenticated$;
+  readonly errors$ = this.auth.error$;
 
   login() {
     return this.auth.loginWithRedirect();
+  }
+
+  signUp() {
+    return this.auth.loginWithRedirect({
+      authorizationParams: { screen_hint: 'signup' },
+    });
   }
 
   logout() {

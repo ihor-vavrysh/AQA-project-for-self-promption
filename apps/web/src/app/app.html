@@ -18,6 +18,14 @@
       >
         Sign in
       </button>
+      <button
+        class="button button-quiet"
+        type="button"
+        [disabled]="!authConfigured"
+        (click)="signUp()"
+      >
+        Sign up
+      </button>
     }
   </nav>
 </header>
