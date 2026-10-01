@@ -130,4 +130,5 @@ idempotent.
 
 📋 **[Read the full plan → PLAN.md](./PLAN.md)** ·
 **[Content catalog plan](./docs/CATALOG.md)** ·
+**[Multi-agent orchestration plan](./docs/AGENTS.md)** ·
 **[Architecture decisions](./docs/adr/)**

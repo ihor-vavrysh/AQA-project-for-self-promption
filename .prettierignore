@@ -6,6 +6,7 @@ coverage/
 pnpm-lock.yaml
 PLAN.md
 docs/CATALOG.md
+docs/AGENTS.md
 hello.html
 apps/web/src/app/core/api/api.generated.ts
 apps/api/openapi.json
