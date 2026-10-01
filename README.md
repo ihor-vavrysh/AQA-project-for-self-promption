@@ -8,9 +8,15 @@ optional self-declared gender used for representation only), request AI-generate
 explainers, worked examples, worksheets and quizzes, then review and edit every draft
 before it reaches a learner.
 
+A **content catalog** sits alongside the generator: taxonomy-navigable pages for courses,
+tutorials, reference books, audio and video, enriched with age-band fit, readability,
+prerequisites and curriculum alignment so a tutor can assign existing material or generate
+new material from the same place. Third-party content is linked or embedded, never hosted.
+See [docs/CATALOG.md](./docs/CATALOG.md).
+
 **Stack:** Node 22 + NestJS · Angular 20+ · PostgreSQL + Drizzle · BullMQ/Redis · Claude API
 
-**Status:** Phase 1 — Walking skeleton in progress.
+**Status:** Phase 1 — Walking skeleton in progress. Catalog planned for Phase 2a.
 
 ## Getting started
 
@@ -94,4 +100,5 @@ Fly's native configuration and CLI rather than an unmaintained Terraform
 provider. Managed Redis is deferred until the Phase 3 queue needs it.
 
 📋 **[Read the full plan → PLAN.md](./PLAN.md)** ·
+**[Content catalog plan](./docs/CATALOG.md)** ·
 **[Architecture decisions](./docs/adr/)**
