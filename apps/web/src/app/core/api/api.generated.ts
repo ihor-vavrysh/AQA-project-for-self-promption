@@ -21,6 +21,80 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/catalog/taxonomy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Browse the subject taxonomy
+         * @description Returns the tree. By default only nodes that pass the depth gate are included, along with the ancestors needed to reach them.
+         */
+        get: operations["CatalogController_getTaxonomy"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/catalog/nodes/{slug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get one taxonomy node */
+        get: operations["CatalogController_getNode"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/catalog/resources": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List published resources with facet counts
+         * @description Filtering by node includes the whole subtree beneath it. Only published resources are returned.
+         */
+        get: operations["CatalogController_listResources"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/catalog/resources/{slug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get one published resource */
+        get: operations["CatalogController_getResource"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/me": {
         parameters: {
             query?: never;
@@ -42,6 +116,126 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        TaxonomyTreeNodeDto: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            parentId: string | null;
+            /** @enum {string} */
+            scheme: "isced-f" | "uk-nc" | "sced" | "internal";
+            code: string;
+            slug: string;
+            /** @description Dot-separated node codes from the root */
+            path: string;
+            depth: number;
+            /** @description Localised labels keyed by language tag; "en" is required */
+            names: {
+                [key: string]: string;
+            };
+            resourceCount: number;
+            mediaTypeCount: number;
+            /** @description True once the node passes the depth gate */
+            published: boolean;
+            children: components["schemas"]["TaxonomyTreeNodeDto"][];
+        };
+        TaxonomyNodeDto: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            parentId: string | null;
+            /** @enum {string} */
+            scheme: "isced-f" | "uk-nc" | "sced" | "internal";
+            code: string;
+            slug: string;
+            /** @description Dot-separated node codes from the root */
+            path: string;
+            depth: number;
+            /** @description Localised labels keyed by language tag; "en" is required */
+            names: {
+                [key: string]: string;
+            };
+            resourceCount: number;
+            mediaTypeCount: number;
+            /** @description True once the node passes the depth gate */
+            published: boolean;
+        };
+        ResourceSummaryDto: {
+            /** Format: uuid */
+            id: string;
+            slug: string;
+            title: string;
+            description: string | null;
+            /** @enum {string} */
+            mediaType: "course" | "tutorial" | "book" | "reference" | "audio" | "video";
+            provider: string;
+            language: string;
+            /** @enum {string} */
+            licence: "cc0" | "public-domain" | "cc-by" | "cc-by-sa" | "platform-tos" | "proprietary";
+            /** @enum {string} */
+            usageTier: "open" | "embed" | "commercial";
+            /** @enum {string} */
+            costModel: "free" | "freemium" | "paid";
+            durationSeconds: number | null;
+            pageCount: number | null;
+            /** Format: date-time */
+            lastVerifiedAt: string | null;
+        };
+        ResourceFacetsDto: {
+            mediaType: {
+                [key: string]: number;
+            };
+            costModel: {
+                [key: string]: number;
+            };
+        };
+        ResourceListDto: {
+            items: components["schemas"]["ResourceSummaryDto"][];
+            total: number;
+            facets: components["schemas"]["ResourceFacetsDto"];
+        };
+        TierCapabilitiesDto: {
+            deepLink: boolean;
+            embed: boolean;
+            mirror: boolean;
+            affiliate: boolean;
+        };
+        ResourceDetailDto: {
+            /** Format: uuid */
+            id: string;
+            slug: string;
+            title: string;
+            description: string | null;
+            /** @enum {string} */
+            mediaType: "course" | "tutorial" | "book" | "reference" | "audio" | "video";
+            provider: string;
+            language: string;
+            /** @enum {string} */
+            licence: "cc0" | "public-domain" | "cc-by" | "cc-by-sa" | "platform-tos" | "proprietary";
+            /** @enum {string} */
+            usageTier: "open" | "embed" | "commercial";
+            /** @enum {string} */
+            costModel: "free" | "freemium" | "paid";
+            durationSeconds: number | null;
+            pageCount: number | null;
+            /** Format: date-time */
+            lastVerifiedAt: string | null;
+            /** Format: uri */
+            canonicalUrl: string;
+            /**
+             * Format: uri
+             * @description Only present when the usage tier permits embedding
+             */
+            embedUrl: string | null;
+            /**
+             * Format: uri
+             * @description Where the visitor should be sent: the affiliate link where the tier permits one, otherwise the canonical URL
+             */
+            outboundUrl: string;
+            attributionText: string | null;
+            authors: string[];
+            isbn: string | null;
+            capabilities: components["schemas"]["TierCapabilitiesDto"];
+        };
         CurrentUserDto: {
             /** Format: uuid */
             id: string;
@@ -81,6 +275,110 @@ export interface operations {
             };
             /** @description The database is unavailable */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CatalogController_getTaxonomy: {
+        parameters: {
+            query?: {
+                /** @description Include nodes that have not yet passed the depth gate */
+                includeUnpublished?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaxonomyTreeNodeDto"][];
+                };
+            };
+        };
+    };
+    CatalogController_getNode: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaxonomyNodeDto"];
+                };
+            };
+            /** @description No node with that slug */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CatalogController_listResources: {
+        parameters: {
+            query?: {
+                offset?: number;
+                limit?: number;
+                costModel?: "free" | "freemium" | "paid";
+                language?: string;
+                mediaType?: "course" | "tutorial" | "book" | "reference" | "audio" | "video";
+                node?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResourceListDto"];
+                };
+            };
+        };
+    };
+    CatalogController_getResource: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResourceDetailDto"];
+                };
+            };
+            /** @description No published resource with that slug */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
