@@ -1,0 +1,221 @@
+<main class="planner">
+  <header class="page-heading">
+    <div>
+      <p class="eyebrow">For adult learners</p>
+      <h1>Make a learning plan that fits your life</h1>
+      <p class="intro">
+        Choose a goal, set a pace, and pick resources that work for you. Your plan stays in this
+        browser; no account is needed.
+      </p>
+    </div>
+  </header>
+
+  <section class="planner-section goal-section" aria-labelledby="goal-heading">
+    <div class="section-heading">
+      <span class="step-number" aria-hidden="true">1</span>
+      <div>
+        <h2 id="goal-heading">What would you like to learn?</h2>
+        <p>Keep it simple: a skill, subject, or outcome you want to work towards.</p>
+      </div>
+    </div>
+
+    <div class="form-grid">
+      <label class="field goal-field">
+        <span>Your learning goal</span>
+        <input
+          type="text"
+          maxlength="120"
+          [value]="goal()"
+          (input)="updateGoal($event)"
+          placeholder="For example, understand the basics of biology"
+        />
+      </label>
+      <label class="field">
+        <span>Plan length</span>
+        <span class="input-with-unit">
+          <input type="number" min="1" max="12" [value]="weeks()" (input)="updateWeeks($event)" />
+          <span>weeks</span>
+        </span>
+      </label>
+      <label class="field">
+        <span>Time you can set aside</span>
+        <span class="input-with-unit">
+          <input
+            type="number"
+            min="1"
+            max="20"
+            [value]="hoursPerWeek()"
+            (input)="updateHoursPerWeek($event)"
+          />
+          <span>hours / week</span>
+        </span>
+      </label>
+    </div>
+  </section>
+
+  <section class="planner-section resource-section" aria-labelledby="resources-heading">
+    <div class="section-heading">
+      <span class="step-number" aria-hidden="true">2</span>
+      <div>
+        <h2 id="resources-heading">Choose your resources</h2>
+        <p>Select the courses, books, and other materials you want to include.</p>
+      </div>
+    </div>
+
+    @if (loadError()) {
+      <p class="error" role="alert">{{ loadError() }}</p>
+    } @else if (loading()) {
+      <p class="status" role="status">Loading published resources…</p>
+    } @else if (resources().length === 0) {
+      <p class="empty-state">
+        There are no published resources to add yet. Please check back soon.
+      </p>
+    } @else {
+      <div class="resource-tools">
+        <label class="field search-field">
+          <span>Find a resource</span>
+          <input
+            type="search"
+            [value]="search()"
+            (input)="updateSearch($event)"
+            placeholder="Search titles, descriptions, or providers"
+          />
+        </label>
+        <label class="field cost-field">
+          <span>Cost</span>
+          <select [value]="costFilter()" (change)="updateCostFilter($event)">
+            <option value="all">Any cost</option>
+            <option value="free">Free</option>
+            <option value="freemium">Free with paid options</option>
+            <option value="paid">Paid</option>
+          </select>
+        </label>
+      </div>
+
+      <p class="selection-count" aria-live="polite">
+        {{ selectedResourceIds().length }} selected · {{ filteredResources().length }} resources
+        shown
+      </p>
+
+      @if (filteredResources().length === 0) {
+        <p class="empty-state">No resources match those filters. Try a different search or cost.</p>
+      } @else {
+        <ul class="resource-list">
+          @for (resource of filteredResources(); track resource.id) {
+            <li>
+              <label class="resource-card">
+                <input
+                  type="checkbox"
+                  [checked]="selectedResourceIds().includes(resource.id)"
+                  (change)="toggleResource(resource.id, $event)"
+                />
+                <span class="resource-content">
+                  <span class="resource-title">{{ resource.title }}</span>
+                  <span class="resource-description">
+                    {{ resource.description || 'No description is available.' }}
+                  </span>
+                  <span class="resource-meta">
+                    {{ formatMediaType(resource.mediaType) }} · {{ resource.provider }} ·
+                    {{ formatCostModel(resource.costModel) }}
+                  </span>
+                </span>
+              </label>
+            </li>
+          }
+        </ul>
+      }
+    }
+  </section>
+
+  <section class="planner-section create-section" aria-labelledby="create-heading">
+    <div class="section-heading">
+      <span class="step-number" aria-hidden="true">3</span>
+      <div>
+        <h2 id="create-heading">Build your plan</h2>
+        <p>
+          @if (selectedResourceIds().length === 0) {
+            Pick at least one resource to get started.
+          } @else {
+            {{ selectedResourceIds().length }} resource(s) will be spread across
+            {{ weeks() }} weeks.
+          }
+        </p>
+      </div>
+    </div>
+    <button
+      class="button button-primary"
+      type="button"
+      [disabled]="!goal().trim() || selectedResourceIds().length === 0"
+      (click)="createPlan()"
+    >
+      Create my plan
+    </button>
+    @if (!goal().trim()) {
+      <p class="hint">Add your learning goal above before creating your plan.</p>
+    }
+  </section>
+
+  @if (plan(); as studyPlan) {
+    <section class="plan-result" aria-labelledby="plan-heading">
+      <header class="plan-header">
+        <div>
+          <p class="eyebrow">Your personal study plan</p>
+          <h2 id="plan-heading">{{ studyPlan.goal }}</h2>
+          <p class="plan-summary">
+            {{ studyPlan.weeks }} weeks · {{ studyPlan.hoursPerWeek }} hours per week ·
+            {{ selectedResources().length }} selected resources
+          </p>
+        </div>
+        <button class="button button-quiet print-button" type="button" (click)="printPlan()">
+          Print or save as PDF
+        </button>
+      </header>
+
+      @if (linkError()) {
+        <p class="error" role="alert">{{ linkError() }}</p>
+      }
+
+      <ol class="week-list">
+        @for (week of studyPlan.schedule; track week.week) {
+          <li class="week-card">
+            <h3>Week {{ week.week }}</h3>
+            @if (week.resources.length === 0) {
+              <p class="review-note">
+                Use this week to revisit your notes, practise, or catch up at your own pace.
+              </p>
+            } @else {
+              <ul class="planned-resources">
+                @for (resource of week.resources; track resource.id) {
+                  <li>
+                    <strong>{{ resource.title }}</strong>
+                    <span>{{ formatMediaType(resource.mediaType) }} · {{ resource.provider }}</span>
+                    @if (resourceLinks()[resource.id]; as resourceUrl) {
+                      <a [href]="resourceUrl" target="_blank" rel="noopener noreferrer">
+                        Open resource <span aria-hidden="true">↗</span>
+                      </a>
+                    } @else {
+                      <button
+                        class="resource-link-button"
+                        type="button"
+                        [disabled]="loadingLinkId() === resource.id"
+                        (click)="loadResourceLink(resource)"
+                      >
+                        {{
+                          loadingLinkId() === resource.id ? 'Getting link…' : 'Get resource link'
+                        }}
+                      </button>
+                    }
+                  </li>
+                }
+              </ul>
+            }
+          </li>
+        }
+      </ol>
+      <p class="privacy-note">
+        This plan is not saved to an account or sent to the server. Print it or save it as a PDF if
+        you want to keep a copy.
+      </p>
+    </section>
+  }
+</main>

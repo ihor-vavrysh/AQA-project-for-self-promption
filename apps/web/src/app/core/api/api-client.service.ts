@@ -64,6 +64,52 @@ export class ApiClientService {
     return result.data;
   }
 
+  async getPublishedResources(): Promise<components['schemas']['ResourceSummaryDto'][]> {
+    const resources: components['schemas']['ResourceSummaryDto'][] = [];
+    let offset = 0;
+    let total: number;
+
+    do {
+      const result = await this.client.GET('/api/v1/catalog/resources', {
+        params: { query: { limit: 100, offset } },
+      });
+
+      if (!result.response.ok) {
+        throw new Error(`Could not load catalog resources: ${result.response.status}`);
+      }
+
+      if (!result.data) {
+        throw new Error('API returned no catalog resource list');
+      }
+
+      total = result.data.total;
+      resources.push(...result.data.items);
+      offset += result.data.items.length;
+
+      if (result.data.items.length === 0 && offset < total) {
+        throw new Error('API returned an incomplete catalog resource list');
+      }
+    } while (offset < total);
+
+    return resources;
+  }
+
+  async getPublishedResource(slug: string): Promise<components['schemas']['ResourceDetailDto']> {
+    const result = await this.client.GET('/api/v1/catalog/resources/{slug}', {
+      params: { path: { slug } },
+    });
+
+    if (!result.response.ok) {
+      throw new Error(`Could not load catalog resource: ${result.response.status}`);
+    }
+
+    if (!result.data) {
+      throw new Error('API returned no catalog resource');
+    }
+
+    return result.data;
+  }
+
   async getLearners(): Promise<components['schemas']['LearnerDto'][]> {
     const result = await this.authenticatedClient.GET('/api/v1/learners');
 

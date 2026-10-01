@@ -2,6 +2,11 @@ import { Routes } from '@angular/router';
 
 export const routes: Routes = [
   {
+    path: 'study-plan',
+    loadComponent: () =>
+      import('./study-plan/study-plan.component').then((module) => module.StudyPlanComponent),
+  },
+  {
     path: 'catalog',
     loadComponent: () =>
       import('./catalog/catalog.component').then((module) => module.CatalogComponent),
