@@ -42,6 +42,13 @@ h1 {
   margin: 0.8rem 0 0;
 }
 
+.external-purchase-note {
+  margin: 0.65rem 0 0;
+  color: #566a64;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
 .planner-section,
 .plan-result {
   margin-top: 1.25rem;
@@ -83,6 +90,39 @@ h3 {
 
 .section-heading p {
   margin: 0.3rem 0 0;
+}
+
+.featured-book {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+  padding: 1rem;
+  border: 1px solid #cbd9d0;
+  border-radius: 0.75rem;
+  background: #f8fbf8;
+}
+
+.featured-book h3 {
+  margin: 0;
+  color: #153f39;
+}
+
+.featured-book p {
+  margin: 0.35rem 0 0;
+  color: #566a64;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.featured-book .featured-book-label {
+  margin: 0 0 0.35rem;
+  color: #446f63;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .form-grid {
@@ -379,6 +419,11 @@ a:focus-visible {
   }
 
   .plan-header {
+    flex-direction: column;
+  }
+
+  .featured-book {
+    align-items: flex-start;
     flex-direction: column;
   }
 }

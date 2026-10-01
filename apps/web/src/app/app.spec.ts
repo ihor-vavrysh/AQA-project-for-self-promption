@@ -41,11 +41,13 @@ describe('App', () => {
     const fixture = TestBed.createComponent(App);
     await fixture.whenStable();
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('a[routerLink="/learners"]')?.textContent).toContain('Mentees');
-    expect(compiled.querySelector('a[routerLink="/study-plan"]')?.textContent).toContain(
+    expect(compiled.querySelector('[data-testid="nav-mentees"]')?.textContent).toContain('Mentees');
+    expect(compiled.querySelector('[data-testid="nav-study-plan"]')?.textContent).toContain(
       'Study planner',
     );
-    expect(compiled.querySelector('button')?.disabled).toBe(true);
+    expect(compiled.querySelector<HTMLButtonElement>('[data-testid="sign-in"]')?.disabled).toBe(
+      true,
+    );
   });
 
   it('explains when Auth0 cannot find the requested API audience', async () => {

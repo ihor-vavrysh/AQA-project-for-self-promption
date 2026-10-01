@@ -156,7 +156,7 @@ export class StudyPlanComponent implements OnInit {
 
     try {
       const detail = await this.api.getPublishedResource(resource.slug);
-      this.resourceLinks.update((links) => ({ ...links, [resource.id]: detail.canonicalUrl }));
+      this.resourceLinks.update((links) => ({ ...links, [resource.id]: detail.outboundUrl }));
     } catch (error) {
       console.error(`Could not load the link for resource "${resource.slug}"`, error);
       this.linkError.set(`The link for “${resource.title}” could not be loaded. Please try again.`);

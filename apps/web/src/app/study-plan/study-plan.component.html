@@ -1,16 +1,25 @@
-<main class="planner">
+<main class="planner" data-testid="study-plan-page">
   <header class="page-heading">
     <div>
       <p class="eyebrow">For adult learners</p>
-      <h1>Make a learning plan that fits your life</h1>
+      <h1 data-testid="study-plan-title">Make a learning plan that fits your life</h1>
       <p class="intro">
         Choose a goal, set a pace, and pick resources that work for you. Your plan stays in this
         browser; no account is needed.
       </p>
+      <p class="external-purchase-note" data-testid="external-purchase-note">
+        Book links open the seller’s website. Prices, availability, and checkout are handled by that
+        seller. Some links may be affiliate links, which can earn TutorForge a commission at no
+        extra cost to you.
+      </p>
     </div>
   </header>
 
-  <section class="planner-section goal-section" aria-labelledby="goal-heading">
+  <section
+    class="planner-section goal-section"
+    aria-labelledby="goal-heading"
+    data-testid="study-goal-section"
+  >
     <div class="section-heading">
       <span class="step-number" aria-hidden="true">1</span>
       <div>
@@ -24,6 +33,7 @@
         <span>Your learning goal</span>
         <input
           type="text"
+          data-testid="study-goal-input"
           maxlength="120"
           [value]="goal()"
           (input)="updateGoal($event)"
@@ -33,7 +43,14 @@
       <label class="field">
         <span>Plan length</span>
         <span class="input-with-unit">
-          <input type="number" min="1" max="12" [value]="weeks()" (input)="updateWeeks($event)" />
+          <input
+            type="number"
+            data-testid="plan-weeks-input"
+            min="1"
+            max="12"
+            [value]="weeks()"
+            (input)="updateWeeks($event)"
+          />
           <span>weeks</span>
         </span>
       </label>
@@ -42,6 +59,7 @@
         <span class="input-with-unit">
           <input
             type="number"
+            data-testid="hours-per-week-input"
             min="1"
             max="20"
             [value]="hoursPerWeek()"
@@ -53,7 +71,11 @@
     </div>
   </section>
 
-  <section class="planner-section resource-section" aria-labelledby="resources-heading">
+  <section
+    class="planner-section resource-section"
+    aria-labelledby="resources-heading"
+    data-testid="resource-selection-section"
+  >
     <div class="section-heading">
       <span class="step-number" aria-hidden="true">2</span>
       <div>
@@ -62,12 +84,31 @@
       </div>
     </div>
 
+    <article class="featured-book" data-testid="featured-book">
+      <div>
+        <p class="featured-book-label">Example book available to buy</p>
+        <h3>Ігри у які грають люди — Ерік Берн</h3>
+        <p>Listed by GOODSHOCK on Rozetka. Price, stock, and checkout are managed by the seller.</p>
+      </div>
+      <a
+        class="button button-primary"
+        data-testid="featured-book-buy-link"
+        href="https://rozetka.com.ua/ua/hudojestvennaya-literatura-omega-l-153334928/p552888756/"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        View book on Rozetka <span aria-hidden="true">↗</span>
+      </a>
+    </article>
+
     @if (loadError()) {
-      <p class="error" role="alert">{{ loadError() }}</p>
+      <p class="error" role="alert" data-testid="resource-load-error">{{ loadError() }}</p>
     } @else if (loading()) {
-      <p class="status" role="status">Loading published resources…</p>
+      <p class="status" role="status" data-testid="resource-loading">
+        Loading published resources…
+      </p>
     } @else if (resources().length === 0) {
-      <p class="empty-state">
+      <p class="empty-state" data-testid="resource-empty-state">
         There are no published resources to add yet. Please check back soon.
       </p>
     } @else {
@@ -76,6 +117,7 @@
           <span>Find a resource</span>
           <input
             type="search"
+            data-testid="resource-search-input"
             [value]="search()"
             (input)="updateSearch($event)"
             placeholder="Search titles, descriptions, or providers"
@@ -83,7 +125,11 @@
         </label>
         <label class="field cost-field">
           <span>Cost</span>
-          <select [value]="costFilter()" (change)="updateCostFilter($event)">
+          <select
+            data-testid="resource-cost-filter"
+            [value]="costFilter()"
+            (change)="updateCostFilter($event)"
+          >
             <option value="all">Any cost</option>
             <option value="free">Free</option>
             <option value="freemium">Free with paid options</option>
@@ -92,20 +138,23 @@
         </label>
       </div>
 
-      <p class="selection-count" aria-live="polite">
+      <p class="selection-count" aria-live="polite" data-testid="resource-selection-count">
         {{ selectedResourceIds().length }} selected · {{ filteredResources().length }} resources
         shown
       </p>
 
       @if (filteredResources().length === 0) {
-        <p class="empty-state">No resources match those filters. Try a different search or cost.</p>
+        <p class="empty-state" data-testid="resource-empty-search">
+          No resources match those filters. Try a different search or cost.
+        </p>
       } @else {
-        <ul class="resource-list">
+        <ul class="resource-list" data-testid="resource-list">
           @for (resource of filteredResources(); track resource.id) {
-            <li>
-              <label class="resource-card">
+            <li data-testid="resource-list-item">
+              <label class="resource-card" data-testid="resource-card">
                 <input
                   type="checkbox"
+                  data-testid="resource-checkbox"
                   [checked]="selectedResourceIds().includes(resource.id)"
                   (change)="toggleResource(resource.id, $event)"
                 />
@@ -127,7 +176,11 @@
     }
   </section>
 
-  <section class="planner-section create-section" aria-labelledby="create-heading">
+  <section
+    class="planner-section create-section"
+    aria-labelledby="create-heading"
+    data-testid="create-plan-section"
+  >
     <div class="section-heading">
       <span class="step-number" aria-hidden="true">3</span>
       <div>
@@ -145,39 +198,47 @@
     <button
       class="button button-primary"
       type="button"
+      data-testid="create-plan-button"
       [disabled]="!goal().trim() || selectedResourceIds().length === 0"
       (click)="createPlan()"
     >
       Create my plan
     </button>
     @if (!goal().trim()) {
-      <p class="hint">Add your learning goal above before creating your plan.</p>
+      <p class="hint" data-testid="goal-required-hint">
+        Add your learning goal above before creating your plan.
+      </p>
     }
   </section>
 
   @if (plan(); as studyPlan) {
-    <section class="plan-result" aria-labelledby="plan-heading">
+    <section class="plan-result" aria-labelledby="plan-heading" data-testid="study-plan-result">
       <header class="plan-header">
         <div>
           <p class="eyebrow">Your personal study plan</p>
-          <h2 id="plan-heading">{{ studyPlan.goal }}</h2>
+          <h2 id="plan-heading" data-testid="study-plan-goal">{{ studyPlan.goal }}</h2>
           <p class="plan-summary">
             {{ studyPlan.weeks }} weeks · {{ studyPlan.hoursPerWeek }} hours per week ·
             {{ selectedResources().length }} selected resources
           </p>
         </div>
-        <button class="button button-quiet print-button" type="button" (click)="printPlan()">
+        <button
+          class="button button-quiet print-button"
+          type="button"
+          data-testid="print-plan-button"
+          (click)="printPlan()"
+        >
           Print or save as PDF
         </button>
       </header>
 
       @if (linkError()) {
-        <p class="error" role="alert">{{ linkError() }}</p>
+        <p class="error" role="alert" data-testid="resource-link-error">{{ linkError() }}</p>
       }
 
       <ol class="week-list">
         @for (week of studyPlan.schedule; track week.week) {
-          <li class="week-card">
+          <li class="week-card" data-testid="plan-week">
             <h3>Week {{ week.week }}</h3>
             @if (week.resources.length === 0) {
               <p class="review-note">
@@ -186,22 +247,43 @@
             } @else {
               <ul class="planned-resources">
                 @for (resource of week.resources; track resource.id) {
-                  <li>
+                  <li data-testid="planned-resource">
                     <strong>{{ resource.title }}</strong>
                     <span>{{ formatMediaType(resource.mediaType) }} · {{ resource.provider }}</span>
                     @if (resourceLinks()[resource.id]; as resourceUrl) {
-                      <a [href]="resourceUrl" target="_blank" rel="noopener noreferrer">
-                        Open resource <span aria-hidden="true">↗</span>
+                      <a
+                        data-testid="open-resource-link"
+                        [href]="resourceUrl"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        @if (resource.mediaType === 'book') {
+                          @if (resource.costModel === 'paid') {
+                            Buy book
+                          } @else if (resource.costModel === 'freemium') {
+                            View book options
+                          } @else {
+                            Read book
+                          }
+                        } @else {
+                          Open resource
+                        }
+                        <span aria-hidden="true">↗</span>
                       </a>
                     } @else {
                       <button
                         class="resource-link-button"
                         type="button"
+                        data-testid="get-resource-link-button"
                         [disabled]="loadingLinkId() === resource.id"
                         (click)="loadResourceLink(resource)"
                       >
                         {{
-                          loadingLinkId() === resource.id ? 'Getting link…' : 'Get resource link'
+                          loadingLinkId() === resource.id
+                            ? 'Getting link…'
+                            : resource.mediaType === 'book'
+                              ? 'Get book link'
+                              : 'Get resource link'
                         }}
                       </button>
                     }
@@ -212,7 +294,7 @@
           </li>
         }
       </ol>
-      <p class="privacy-note">
+      <p class="privacy-note" data-testid="plan-privacy-note">
         This plan is not saved to an account or sent to the server. Print it or save it as a PDF if
         you want to keep a copy.
       </p>

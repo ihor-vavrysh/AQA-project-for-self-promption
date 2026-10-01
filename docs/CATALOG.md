@@ -244,7 +244,7 @@ for work. The public surface shows enrichment but gates assignment behind sign-i
 | `/learn/:path/:topic/courses` · `/tutorials` · `/books` · `/audio` · `/video` | Per-media-type listings, each with its own template and its own facets (books get ISBN/author/edition; audio and video get duration and transcript availability; courses get provider, cost and length) |
 | `/resource/:slug` | Resource detail — enrichment, licence and attribution, last-verified date, outbound/embed, "assign to a learner" CTA |
 | `/pathways/:slug` | Curated ordered sequences across media types — high value and genuinely hard to copy |
-| `/study-plan` | No-login planner for adult learners to choose published resources and build a browser-only study plan |
+| `/study-plan` | No-login planner for adult learners to choose published resources and build a browser-only study plan; includes an example purchase link for Eric Berne’s *Ігри у які грають люди* on Rozetka |
 | `/search` | Faceted search: media type, age band, licence, language, curriculum, duration, cost |
 | `/licences`, `/takedown`, `/content-policy` | Attribution, DMCA process, and the vetting policy. **Ship with the first public page, not after.** |
 

@@ -61,9 +61,10 @@ describe('StudyPlanComponent', () => {
 
   beforeEach(async () => {
     api.getPublishedResources.mockReset().mockResolvedValue(resources);
-    api.getPublishedResource
-      .mockReset()
-      .mockResolvedValue({ canonicalUrl: 'https://example.test/biology' });
+    api.getPublishedResource.mockReset().mockResolvedValue({
+      canonicalUrl: 'https://example.test/biology',
+      outboundUrl: 'https://books.example.test/buy/biology',
+    });
 
     await TestBed.configureTestingModule({
       imports: [StudyPlanComponent],
@@ -78,14 +79,16 @@ describe('StudyPlanComponent', () => {
     fixture.detectChanges();
 
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelectorAll('.resource-card')).toHaveLength(3);
+    expect(compiled.querySelectorAll('[data-testid="resource-card"]')).toHaveLength(3);
 
-    const search = compiled.querySelector<HTMLInputElement>('input[type="search"]');
+    const search = compiled.querySelector<HTMLInputElement>(
+      '[data-testid="resource-search-input"]',
+    );
     expect(search).not.toBeNull();
     search!.value = 'cells';
     search!.dispatchEvent(new Event('input'));
     fixture.detectChanges();
-    expect(compiled.querySelectorAll('.resource-card')).toHaveLength(1);
+    expect(compiled.querySelectorAll('[data-testid="resource-card"]')).toHaveLength(1);
     expect(compiled.textContent).toContain('Cells and life');
   });
 
@@ -101,7 +104,9 @@ describe('StudyPlanComponent', () => {
     component.hoursPerWeek.set(4);
 
     const compiled = fixture.nativeElement as HTMLElement;
-    const checkboxes = compiled.querySelectorAll<HTMLInputElement>('.resource-card input');
+    const checkboxes = compiled.querySelectorAll<HTMLInputElement>(
+      '[data-testid="resource-checkbox"]',
+    );
     const firstCheckbox = checkboxes.item(0);
     const thirdCheckbox = checkboxes.item(2);
     expect(firstCheckbox).not.toBeNull();
@@ -118,35 +123,40 @@ describe('StudyPlanComponent', () => {
     component.createPlan();
     fixture.detectChanges();
 
-    expect(compiled.querySelector('#plan-heading')?.textContent).toContain('Learn biology basics');
+    expect(compiled.querySelector('[data-testid="study-plan-goal"]')?.textContent).toContain(
+      'Learn biology basics',
+    );
     expect(compiled.querySelector('.plan-summary')?.textContent).toContain('2 weeks');
-    expect(compiled.querySelectorAll('.week-card')).toHaveLength(2);
+    expect(compiled.querySelectorAll('[data-testid="plan-week"]')).toHaveLength(2);
     expect(compiled.querySelector('.week-list')?.textContent).toContain('Introduction to biology');
     expect(compiled.querySelector('.week-list')?.textContent).toContain('Cells and life');
     expect(compiled.textContent).toContain('not saved to an account or sent to the server');
   });
 
-  it('loads the external link only when the learner asks to open a selected resource', async () => {
+  it('uses the curated outbound book link only when the learner asks to open it', async () => {
     const fixture = TestBed.createComponent(StudyPlanComponent);
     fixture.detectChanges();
     await fixture.whenStable();
 
     const component = fixture.componentInstance;
-    const firstResource = resources[0];
-    expect(firstResource).toBeDefined();
-    if (!firstResource) {
-      return;
-    }
+    const book = resources[1];
+    expect(book).toBeDefined();
+    if (!book) return;
+
     component.goal.set('Learn biology basics');
-    component.selectedResourceIds.set([firstResource.id]);
+    component.selectedResourceIds.set([book.id]);
     component.createPlan();
-    await component.loadResourceLink(firstResource);
+    await component.loadResourceLink(book);
     fixture.detectChanges();
 
-    expect(api.getPublishedResource).toHaveBeenCalledWith('intro-to-biology');
-    expect(
-      fixture.nativeElement.querySelector('a[href="https://example.test/biology"]'),
-    ).not.toBeNull();
+    expect(api.getPublishedResource).toHaveBeenCalledWith('biology-reference');
+    const link = fixture.nativeElement.querySelector(
+      '[data-testid="open-resource-link"]',
+    ) as HTMLAnchorElement | null;
+    expect(link?.getAttribute('href')).toBe('https://books.example.test/buy/biology');
+    expect(link?.textContent).toContain('Buy book');
+    expect(link?.target).toBe('_blank');
+    expect(link?.rel).toContain('noopener');
   });
 
   it('shows a clear error when catalog resources cannot be loaded', async () => {
@@ -157,8 +167,46 @@ describe('StudyPlanComponent', () => {
     await fixture.whenStable();
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.querySelector('[role="alert"]')?.textContent).toContain(
-      'Resources could not be loaded',
+    expect(
+      fixture.nativeElement.querySelector('[data-testid="resource-load-error"]')?.textContent,
+    ).toContain('Resources could not be loaded');
+  });
+
+  it('exposes stable test ids for the planner controls', async () => {
+    const fixture = TestBed.createComponent(StudyPlanComponent);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('[data-testid="study-plan-page"]')).not.toBeNull();
+    expect(compiled.querySelector('[data-testid="study-plan-title"]')).not.toBeNull();
+    expect(compiled.querySelector('[data-testid="study-goal-input"]')).not.toBeNull();
+    expect(compiled.querySelector('[data-testid="plan-weeks-input"]')).not.toBeNull();
+    expect(compiled.querySelector('[data-testid="hours-per-week-input"]')).not.toBeNull();
+    expect(compiled.querySelector('[data-testid="resource-selection-section"]')).not.toBeNull();
+    expect(compiled.querySelector('[data-testid="resource-cost-filter"]')).not.toBeNull();
+    expect(compiled.querySelector('[data-testid="create-plan-button"]')).not.toBeNull();
+  });
+
+  it('shows the requested example book with its Rozetka purchase page', async () => {
+    const fixture = TestBed.createComponent(StudyPlanComponent);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('[data-testid="featured-book"]')?.textContent).toContain(
+      'Ігри у які грають люди — Ерік Берн',
     );
+
+    const purchaseLink = compiled.querySelector(
+      '[data-testid="featured-book-buy-link"]',
+    ) as HTMLAnchorElement | null;
+    expect(purchaseLink?.getAttribute('href')).toBe(
+      'https://rozetka.com.ua/ua/hudojestvennaya-literatura-omega-l-153334928/p552888756/',
+    );
+    expect(purchaseLink?.target).toBe('_blank');
+    expect(purchaseLink?.rel).toContain('noopener');
   });
 });

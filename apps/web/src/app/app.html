@@ -1,20 +1,27 @@
 <header class="topbar">
-  <a class="brand" routerLink="/" aria-label="TutorForge home">TutorForge</a>
+  <a class="brand" routerLink="/" aria-label="TutorForge home" data-testid="brand-home"
+    >TutorForge</a
+  >
   <nav aria-label="Main navigation">
-    <a routerLink="/catalog">Catalog</a>
-    <a routerLink="/study-plan">Study planner</a>
-    <a routerLink="/learners">Mentees</a>
-    <a href="/api/docs">API reference</a>
-    <span class="api-status" role="status" aria-live="polite">API {{ apiStatus() }}</span>
+    <a routerLink="/catalog" data-testid="nav-catalog">Catalog</a>
+    <a routerLink="/study-plan" data-testid="nav-study-plan">Study planner</a>
+    <a routerLink="/learners" data-testid="nav-mentees">Mentees</a>
+    <a href="/api/docs" data-testid="nav-api-reference">API reference</a>
+    <span class="api-status" role="status" aria-live="polite" data-testid="api-status"
+      >API {{ apiStatus() }}</span
+    >
     @if (isAuthenticated$ | async) {
-      <span class="profile-status" role="status" aria-live="polite">
+      <span class="profile-status" role="status" aria-live="polite" data-testid="profile-status">
         {{ profileStatus() }}
       </span>
-      <button class="button button-quiet" type="button" (click)="signOut()">Sign out</button>
+      <button class="button button-quiet" type="button" data-testid="sign-out" (click)="signOut()">
+        Sign out
+      </button>
     } @else {
       <button
         class="button button-primary"
         type="button"
+        data-testid="sign-in"
         [disabled]="!authConfigured"
         (click)="signIn()"
       >
@@ -23,6 +30,7 @@
       <button
         class="button button-quiet"
         type="button"
+        data-testid="sign-up"
         [disabled]="!authConfigured"
         (click)="signUp()"
       >
@@ -33,9 +41,11 @@
 </header>
 
 @if (loginError()) {
-  <p class="error" role="alert">{{ loginError() }}</p>
+  <p class="error" role="alert" data-testid="login-error">{{ loginError() }}</p>
 }
 
 <router-outlet />
 
-<footer>TutorForge &middot; Adult study plans stay in your browser.</footer>
+<footer data-testid="app-footer">
+  TutorForge &middot; Adult study plans stay in your browser.
+</footer>
