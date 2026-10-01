@@ -1,10 +1,12 @@
 import { Component, OnInit, signal } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
 import type { components } from '../core/api/api.generated';
 import { ApiClientService } from '../core/api/api-client.service';
 
 type TaxonomyNode = components['schemas']['TaxonomyTreeNodeDto'];
 
 @Component({
+  imports: [NgTemplateOutlet],
   selector: 'app-catalog',
   styleUrl: './catalog.component.css',
   templateUrl: './catalog.component.html',
@@ -33,7 +35,9 @@ export class CatalogComponent implements OnInit {
       this.taxonomy.set(nodes);
     } catch (error) {
       console.error('Catalog taxonomy failed to load', error);
-      this.error.set('The catalog could not be loaded. Check that the API is available and try again.');
+      this.error.set(
+        'The catalog could not be loaded. Check that the API is available and try again.',
+      );
     } finally {
       this.loading.set(false);
     }

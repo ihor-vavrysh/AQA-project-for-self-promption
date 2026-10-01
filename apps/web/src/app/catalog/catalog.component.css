@@ -59,18 +59,69 @@ h1 {
 
 .taxonomy-children,
 .taxonomy-children ul {
+  list-style: none;
   margin: 0;
-  padding-left: 1.2rem;
+  padding: 0;
   color: #345550;
 }
 
-.taxonomy-children > li,
 .taxonomy-children li {
-  margin: 0.5rem 0;
+  margin: 0.2rem 0;
   line-height: 1.5;
 }
 
+details > .taxonomy-children {
+  margin: 0.25rem 0 0.35rem 0.7rem;
+  padding-left: 0.85rem;
+  border-left: 1px solid #dfe6df;
+}
+
+summary {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.4rem 0.5rem;
+  border-radius: 0.45rem;
+  color: #345550;
+  cursor: pointer;
+  font-weight: 600;
+  list-style: none;
+}
+
+summary::-webkit-details-marker {
+  display: none;
+}
+
+summary::before {
+  content: '+';
+  display: inline-grid;
+  width: 1.15rem;
+  height: 1.15rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid #cbd9d0;
+  border-radius: 50%;
+  color: #446f63;
+  font-size: 0.8rem;
+  line-height: 1;
+}
+
+details[open] > summary::before {
+  content: '−';
+}
+
+summary:hover {
+  background: #f2f7f3;
+}
+
+summary:focus-visible {
+  outline: 3px solid #7ba89a;
+  outline-offset: 2px;
+}
+
 .topic-label {
+  display: inline-block;
+  padding: 0.35rem 0.5rem;
   font-weight: 600;
 }
 

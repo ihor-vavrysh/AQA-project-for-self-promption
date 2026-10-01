@@ -4,7 +4,8 @@
       <p class="eyebrow">Content catalog</p>
       <h1>Topics and categories</h1>
       <p class="intro">
-        Browse the taxonomy by subject and stage. Published nodes show the content that is ready to use.
+        Browse the taxonomy by subject and stage. Published nodes show the content that is ready to
+        use.
       </p>
     </div>
   </header>
@@ -19,25 +20,33 @@
         <article class="taxonomy-node">
           <h2>{{ label(node) }}</h2>
           @if (node.children.length > 0) {
-            <ul class="taxonomy-children">
-              @for (child of node.children; track child.id) {
-                <li>
-                  <span class="topic-label">{{ label(child) }}</span>
-                  @if (child.children.length > 0) {
-                    <ul>
-                      @for (grandchild of child.children; track grandchild.id) {
-                        <li>
-                          <span class="topic-label">{{ label(grandchild) }}</span>
-                        </li>
-                      }
-                    </ul>
-                  }
-                </li>
-              }
-            </ul>
+            <ng-container
+              [ngTemplateOutlet]="taxonomyBranch"
+              [ngTemplateOutletContext]="{ $implicit: node.children, level: 0 }"
+            />
           }
         </article>
       }
     </section>
   }
 </main>
+
+<ng-template #taxonomyBranch let-nodes let-level="level">
+  <ul class="taxonomy-children">
+    @for (node of nodes; track node.id) {
+      <li>
+        @if (node.children.length > 0) {
+          <details [open]="level === 0">
+            <summary>{{ label(node) }}</summary>
+            <ng-container
+              [ngTemplateOutlet]="taxonomyBranch"
+              [ngTemplateOutletContext]="{ $implicit: node.children, level: level + 1 }"
+            />
+          </details>
+        } @else {
+          <span class="topic-label">{{ label(node) }}</span>
+        }
+      </li>
+    }
+  </ul>
+</ng-template>
