@@ -96,7 +96,7 @@ material, never as hosted material — see docs/CATALOG.md §3.
 | Queue | **BullMQ + Redis** | Generation is slow (5–30s). Async jobs with progress are the honest design, and they give the E2E suite something real to wait on. |
 | Contracts | **OpenAPI 3.1 generated from Nest decorators**; Angular client generated from it | One source of truth. A drift check in CI fails the build if the committed spec is stale. |
 | Monorepo | **pnpm workspaces + Turborepo** | Fast, cacheable CI; simple enough to read. |
-| AI | **Claude API** — Sonnet 5 for bulk generation, Opus 5 for hard subjects and as eval judge, Haiku 4.5 for classification/moderation/tagging | Real integration as agreed. Tiering is itself part of the cost story. |
+| AI | **Claude API** — Sonnet 5.5 for bulk generation, Opus 5.5 for hard subjects and as eval judge, Haiku 4.5 for classification/moderation/tagging. Model IDs are used exactly as published, never with a date suffix | Real integration as agreed. Tiering is itself part of the cost story. |
 
 ---
 
@@ -174,7 +174,7 @@ tutorforge/
 ├── load/                       k6 scenarios
 ├── tools/openapi-codegen/      OpenAPI TypeScript client generator
 ├── infra/                      Dockerfiles, compose, Terraform, deploy manifests
-├── .github/workflows/          CI/CD (§10)
+├── .github/workflows/          CI/CD (§11)
 ├── docs/
 │   ├── adr/                    architecture decision records
 │   ├── MODEL_CARD.md           ★ what the AI does, limits, eval results
@@ -233,7 +233,7 @@ This is what "incorporated AI artifacts" means in practice here. Two categories.
 | **Prompt templates** | `prompts/<id>/v<N>.md` with YAML front matter: model tier, temperature, max tokens, output schema ref, changelog | PR diff. A prompt change is a code change and needs a passing eval run. |
 | **Output schemas** | Zod schemas in `packages/shared`, mirrored as JSON Schema for tool-use structured output | Type errors and schema-validity tests |
 | **Golden set** | `evals/datasets/*.jsonl` — ~150 curated request/expectation pairs spanning every age band × 3 locales × 4 content types, plus edge cases | PR review; additions required when a bug is found |
-| **Judges** | Opus 5 rubric judges (pedagogical soundness, age-appropriateness, curriculum alignment, factual accuracy) + deterministic scorers (readability, schema validity, answer-key correctness via symbolic check) | Judge prompts are themselves versioned and have meta-evals against human-labelled samples |
+| **Judges** | Opus 5.5 rubric judges (pedagogical soundness, age-appropriateness, curriculum alignment, factual accuracy) + deterministic scorers (readability, schema validity, answer-key correctness via symbolic check) | Judge prompts are themselves versioned and have meta-evals against human-labelled samples |
 | **Eval reports** | HTML + JSON score reports per run, published to GitHub Pages with trend charts | Build artifact on every run |
 | **Adversarial suite** | Prompt-injection attempts in learner profile fields, jailbreaks, requests for age-inappropriate content, PII leakage probes | Must stay at 100% blocked |
 | **Bias-parity suite** | §4 | Must pass |
@@ -252,13 +252,18 @@ This is what "incorporated AI artifacts" means in practice here. Two categories.
 
 ### Engineering details worth planning up front
 
-- **Structured output** via tool-use with a forced schema. Never parse prose.
+- **Structured output** via `output_config.format` with `messages.parse()`, reusing the
+  Zod schemas in `@tutorforge/shared`. Never parse prose, and **never** forced tool use:
+  `tool_choice: {type: "any"}` / `{type: "tool"}` returns a 400 on Opus 5.5 and
+  Sonnet 5.5. Where a tool needs schema-valid arguments, use `auto` + `strict: true`.
 - **Prompt caching** on the large stable prefix (curriculum descriptors, pedagogy rubric,
   format spec) — this is the bulk of the token spend and caching it is the main cost lever.
+  Caches are **model-scoped**, so a mid-conversation model switch throws the cache away:
+  delegate a sub-task to a cheaper model instead of switching to it (§9).
 - **Semantic + exact cache**: exact-hash cache on the normalised request; the DB is checked
   before the model is called. Cache hit rate is a tracked metric.
-- **Two-stage pipeline**: Sonnet 5 generates → Haiku 4.5 classifies (age-appropriateness,
-  safety, difficulty, readability) → fail closed into a tutor-visible flag. Opus 5 is used
+- **Two-stage pipeline**: Sonnet 5.5 generates → Haiku 4.5 classifies (age-appropriateness,
+  safety, difficulty, readability) → fail closed into a tutor-visible flag. Opus 5.5 is used
   for advanced-level subjects and for judging, not for bulk.
 - **Retries** with jittered backoff on 429/529; **circuit breaker** with a clear degraded
   state in the UI rather than a spinner that never ends.
@@ -308,7 +313,45 @@ assert identical ranked resource lists across gender values.
 
 ---
 
-## 9. Test automation strategy
+## 9. Multi-agent orchestration — Lesson Studio
+
+A feature that runs **multiple cooperating agents** to assemble a complete lesson:
+planning, catalog research, authoring four artefacts in parallel, independent pedagogy
+review, and safety vetting. **Full plan: [docs/AGENTS.md](./docs/AGENTS.md).**
+
+The short version:
+
+- **Most tasks do not need this.** A single call with a good prompt beats a crew. One
+  explainer, one worksheet, one enrichment pass — all stay single-call. Only *lesson
+  assembly* is genuinely fan-out shaped, and the governing rule is **ship the
+  single-agent baseline first and add an agent only when an eval delta justifies it**;
+  an agent that cannot show its delta gets deleted.
+- **Six specialists, not one agent with every tool**: Lesson Lead (Opus 5.5) plans,
+  delegates, verifies and assembles; Catalog Scout (Haiku 4.5) does the reading-heavy
+  catalog research; Curriculum Mapper and Artefact Writers (Sonnet 5.5) map standards
+  and write one artefact per spawn; Pedagogy Reviewers run several independent passes;
+  Safety Vetter (Haiku 4.5) is a hard gate that fails closed.
+- **Self-hosted harness**, not a hosted sandbox: the agents' most valuable tools are our
+  own catalog and learner profiles, which live in our Postgres behind tenancy rules, and
+  every run must land a provenance row. Fan-out runs on the Phase 3 BullMQ flows.
+- **No agent writes to the database and no agent reaches a learner.** Agents return
+  typed artefacts; the orchestrator persists after schema validation; the tutor review
+  gate in §2 is unchanged and non-bypassable.
+- **Cost is bounded twice**: an advisory task budget so the model paces itself, and an
+  enforced per-lesson dollar cap that degrades to a partial draft with a visible reason.
+  Revision loops are capped at two rounds.
+- **The catalog creates a new attack surface.** Third-party resource descriptions become
+  prompt-injection vectors once an agent reads them, so all third-party text enters
+  context as delimited data, operator instructions travel only as mid-conversation
+  system messages, and every subagent is read-only.
+- **Testability is a design constraint, not an afterthought**: the orchestrator is a
+  pure state machine unit-testable without a model call, and every agent run replays
+  from a cassette keyed on `(role, promptVersion, model, inputHash)` so PR CI runs the
+  whole orchestration deterministically at zero cost.
+
+---
+
+## 10. Test automation strategy
 
 | Layer | Tool | Scope | Where it runs | Gate |
 | --- | --- | --- | --- | --- |
@@ -339,7 +382,7 @@ to a tracked quarantine job with a 7-day expiry that fails the build if unresolv
 
 ---
 
-## 10. CI/CD
+## 11. CI/CD
 
 GitHub Actions. Three workflows.
 
@@ -398,7 +441,7 @@ maintained provider becomes available or the hosting target changes.
 
 ---
 
-## 11. Observability
+## 12. Observability
 
 OpenTelemetry traces end to end, with the AI call as a first-class span carrying model,
 prompt version, token counts, cost, and cache status. Structured JSON logs with request
@@ -409,7 +452,7 @@ anomalies and approval-rate drops.
 
 ---
 
-## 12. Delivery phases
+## 13. Delivery phases
 
 Sized for one engineer with AI assistance. Each phase ends green and deployable.
 
@@ -424,6 +467,9 @@ Sized for one engineer with AI assistance. Each phase ends green and deployable.
 | **4b — Catalog: enrichment + matching** | Enrichment pipeline on the Phase 3 core (age-band fit, readability, prerequisites, standards alignment, character-fit tags, safety vet), recommendation panel, assign + outcome capture, enrichment evals, bias parity extended to ranking, indexing enabled | 2 w |
 | **5 — Hardening & showcase polish** | Mutation testing, k6, security scans, SBOM + provenance, preview environments, blue/green + rollback, eval trend site on GitHub Pages, README with architecture diagrams and a 3-minute demo video | 1.5 w |
 | **5b — Catalog: connectors + ops** | Connector framework; Gutendex (self-hosted), LibriVox, OpenStax/LibreTexts/OER Commons, YouTube Data API, Open Library bulk import; dedup; link-health monitoring; spot-check queue | 2.5 w |
+| **7a — Single-agent lesson baseline** | Lesson assembly as one Opus 5.5 call with the full artefact schema, plus a lesson-quality golden set. The number every agent must beat | 1 w |
+| **7b — Orchestrator + fan-out** | Tool Runner harness, BullMQ flows, Lead + parallel Artefact Writers, provenance, cassette replay, state-machine tests, budgets | 2 w |
+| **7c — Specialists + gates** | Catalog Scout, Curriculum Mapper, Pedagogy Reviewers, Safety Vetter, sequential gates, bounded critic loop, adversarial and bias-parity suites, trace UI | 2 w |
 | **6 — Stretch** | Feedback flywheel (mine `ReviewDecision` and `resource_assignment` outcomes into ranking and the golden set), curated pathways, demand-driven node lighting, affiliate wiring, second region, RAG over tutor-uploaded curriculum docs, multilingual output, offline worksheet PDF export | open |
 
 **MVP through Phase 5: roughly 9–10 weeks without the catalog, 16–17 weeks with it.**
@@ -435,7 +481,7 @@ can be stopped after 2a or 4b without leaving a half-built module.
 
 ---
 
-## 13. Definition of done for the showcase
+## 14. Definition of done for the showcase
 
 - [ ] `git clone && pnpm i && pnpm dev` works from a cold machine, documented in the README
 - [ ] Green badge set: CI, coverage, eval score, security
@@ -452,7 +498,7 @@ can be stopped after 2a or 4b without leaving a half-built module.
 
 ---
 
-## 14. Risks
+## 15. Risks
 
 | Risk | Mitigation |
 | --- | --- |
@@ -466,11 +512,14 @@ can be stopped after 2a or 4b without leaving a half-built module.
 | Copyright exposure from third-party books, audio, video | Never host; three usage tiers; mandatory non-null `licence`/`usage_tier` with a blocking CI test; takedown policy live before the first public page |
 | Third-party content unsuitable for minors | AI pre-screen plus mandatory human confirmation before anything is surfaceable under 16; tutor-mediated assignment only |
 | Link rot and provider API withdrawal | Nightly health sweep, tombstones not 404s, isolated connector adapters, `source_terms_verified_at` with quarterly re-review, self-host what becomes load-bearing |
+| Multi-agent becomes cargo cult — more agents, no better lessons | docs/AGENTS.md §1: single-agent baseline first, every roster addition shows an eval delta or is removed |
+| Agent cost or latency runs away | Enforced per-lesson dollar cap, advisory task budget, bounded revision rounds, Haiku for reading-heavy work, blocking cost-regression test |
+| Prompt injection through catalog or profile text into agent context | Delimited data blocks, operator-channel system messages, read-only least-privilege agents, no agent writes, 100%-blocked adversarial gate |
 | The gender dimension reads badly to a reviewer | §4 makes the position explicit and the bias-parity test makes it demonstrable — turning the riskiest requirement into the strongest artifact |
 
 ---
 
-## 15. Open decisions
+## 16. Open decisions
 
 1. **Auth provider** — Auth0 selected for Phase 1; self-hosted Keycloak was deferred.
 2. **Hosting** — Fly.io selected. Use native Fly app configuration and GitHub Actions;
@@ -491,3 +540,8 @@ can be stopped after 2a or 4b without leaving a half-built module.
 9. **Catalog indexing timing** — recommend building pages in Phase 2a but holding `noindex`
    until enrichment lands in 4b. The ranking case depends on enrichment existing, and a
    premature crawl of thin pages is expensive to undo.
+10. **Agent harness** — self-hosted Tool Runner recommended over Managed Agents, because
+    the agents' tools are our own database. Revisit if autonomous scheduled lesson
+    refresh becomes wanted; see docs/AGENTS.md §2.
+11. **Per-lesson cost cap** — needs a number measured from the Phase 7a baseline rather
+    than guessed.

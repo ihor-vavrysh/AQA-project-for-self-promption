@@ -75,7 +75,7 @@ Recommendation: **UK GCSE / Key Stage 3–4 maths and the three sciences, `en-GB
 Expand along one axis at a time afterwards: adjacent subjects first (cheaper — same
 curriculum framework), then adjacent regions (`en-US/CommonCore`, `uk-UA/NUS`).
 
-This is an open decision — see PLAN.md §15 — and it is a founder's call, not an
+This is an open decision — see PLAN.md §16 — and it is a founder's call, not an
 engineering one. The architecture below is wedge-agnostic; only the seed data changes.
 
 ---
@@ -190,10 +190,10 @@ cost meter, same provenance pattern as `GeneratedContent`:
 | --- | --- | --- |
 | `reading_level`, `readability_score` | Deterministic scorer (Flesch-Kincaid et al.) on extracted text — no model needed | — |
 | `age_band_fit[]` | Haiku 4.5 classification, deterministic scorer as a cross-check | Haiku |
-| `difficulty`, `prerequisite_concepts[]` | Sonnet 5 against the topic's concept graph | Sonnet |
-| `standard_alignment[]` | Sonnet 5 against locally mirrored CASE frameworks (§2) | Sonnet |
+| `difficulty`, `prerequisite_concepts[]` | Sonnet 5.5 against the topic's concept graph | Sonnet |
+| `standard_alignment[]` | Sonnet 5.5 against locally mirrored CASE frameworks (§2) | Sonnet |
 | `character_fit_tags[]` | Haiku 4.5 — maps content themes onto the interest vocabulary | Haiku |
-| `quality_score`, `summary` | Sonnet 5 rubric; summary is ours, written for tutors, not scraped | Sonnet |
+| `quality_score`, `summary` | Sonnet 5.5 rubric; summary is ours, written for tutors, not scraped | Sonnet |
 | `safety_vet_status` | Haiku 4.5 pre-screen → **human confirmation required** before any resource is surfaceable for a learner under 16 | Haiku + human |
 
 Enrichment is **the unique value on every public page** — the thing that makes a catalog
@@ -374,7 +374,7 @@ that are genuinely worth enforcing in CI.
 
 ## 10. Phasing
 
-Slots into PLAN.md §12. Enrichment deliberately follows the Phase 3 AI core.
+Slots into PLAN.md §13. Enrichment deliberately follows the Phase 3 AI core.
 
 | Phase | Deliverable | Est. |
 | --- | --- | --- |
