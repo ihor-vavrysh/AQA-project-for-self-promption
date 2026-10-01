@@ -4,8 +4,8 @@ An AI-assisted content platform for education tutors, built as a **showcase of t
 automation, CI/CD, and AI engineering practice**. The product is real enough to be
 interesting; the engineering around it is the point.
 
-> Status: plan only. No code has been written yet. This document is the contract for
-> what gets built and in what order.
+> Status: Phase 1 — Walking skeleton in progress. Auth0 and Fly.io selected.
+> This document is the contract for what gets built and in what order.
 
 ---
 
@@ -162,6 +162,7 @@ tutorforge/
 │   └── evals/                  ★ eval harness, golden sets, judges, reports (§7)
 ├── e2e/                        Playwright specs, fixtures, page objects
 ├── load/                       k6 scenarios
+├── tools/openapi-codegen/      OpenAPI TypeScript client generator
 ├── infra/                      Dockerfiles, compose, Terraform, deploy manifests
 ├── .github/workflows/          CI/CD (§9)
 ├── docs/
@@ -327,8 +328,11 @@ published to GitHub Pages.
 | Staging | Merge to `main` | Seeded, synthetic learners only | Live Claude API, low cost cap |
 | Production | Manual approval | Real | Blue/green, feature flags, cost alerting |
 
-Infra target: **Fly.io or AWS ECS Fargate**, Terraform-managed, Postgres and Redis managed.
-Fly.io keeps the showcase cheap to actually run; the Terraform is portable either way.
+Infra target: **Fly.io**, with Postgres managed and Redis managed when Phase 3 needs
+the generation queue. The official Fly Terraform provider is archived and does not
+support Managed Postgres, so staging uses Fly-native `fly.toml` configuration and
+GitHub Actions rather than an unmaintained provider. Revisit Terraform if a
+maintained provider becomes available or the hosting target changes.
 
 ---
 
@@ -392,10 +396,9 @@ showcase project that adds CI at the end always looks like it.
 
 ## 14. Open decisions
 
-1. **Auth provider** — Auth0 (fast, free tier, looks professional) vs. self-hosted Keycloak
-   (more to show, more to maintain). Leaning Auth0.
-2. **Hosting** — Fly.io (cheap, simple, fine for a demo) vs. AWS ECS + RDS (more
-   enterprise-credible, costs real money to leave running). Leaning Fly.io with portable Terraform.
+1. **Auth provider** — Auth0 selected for Phase 1; self-hosted Keycloak was deferred.
+2. **Hosting** — Fly.io selected. Use native Fly app configuration and GitHub Actions;
+   the official Terraform provider is archived and does not manage Postgres.
 3. **Preview environments** — real value, real cost. Phase 5, cut if time is short.
 4. **Regions in MVP** — recommend three: `en-GB/KS3`, `en-US/CommonCore`, `uk-UA/NUS`.
    Enough to prove the abstraction without drowning in curriculum research.

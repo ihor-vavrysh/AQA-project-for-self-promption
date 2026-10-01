@@ -1,0 +1,53 @@
+<header class="topbar">
+  <a class="brand" routerLink="/" aria-label="TutorForge home">TutorForge</a>
+  <nav aria-label="Main navigation">
+    <a href="/api/docs">API reference</a>
+    @if (isAuthenticated$ | async) {
+      <span class="profile-status" role="status" aria-live="polite">
+        {{ profileStatus() }}
+      </span>
+      <button class="button button-quiet" type="button" (click)="signOut()">Sign out</button>
+    } @else {
+      <button
+        class="button button-primary"
+        type="button"
+        [disabled]="!authConfigured"
+        (click)="signIn()"
+      >
+        Sign in
+      </button>
+    }
+  </nav>
+</header>
+
+<main>
+  <section class="hero" aria-labelledby="welcome-heading">
+    <p class="eyebrow">A calmer way to prepare for every learner</p>
+    <h1 id="welcome-heading">Make every lesson feel personal.</h1>
+    <p class="hero-copy">
+      TutorForge helps tutors create, review, and refine lesson materials—always keeping the tutor
+      in control.
+    </p>
+    @if (!authConfigured) {
+      <p class="notice" role="status">
+        Add your Auth0 domain, client ID, and API audience in
+        <code>public/app-config.json</code> to enable sign-in.
+      </p>
+    }
+    @if (loginError()) {
+      <p class="error" role="alert">{{ loginError() }}</p>
+    }
+  </section>
+
+  <section class="status-card" aria-labelledby="api-heading">
+    <div>
+      <p class="eyebrow">Walking skeleton</p>
+      <h2 id="api-heading">API connection</h2>
+    </div>
+    <p class="status" role="status" aria-live="polite">{{ apiStatus() }}</p>
+  </section>
+</main>
+
+<footer>TutorForge &middot; Drafts stay under tutor review before they reach a learner.</footer>
+
+<router-outlet />
