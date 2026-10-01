@@ -7,7 +7,6 @@ import { Auth0ClaimsSchema } from '@tutorforge/shared';
 import request from 'supertest';
 import type { App } from 'supertest/types.js';
 import { resolve } from 'node:path';
-import { AppModule } from '../src/app.module.js';
 import { DatabaseService } from '../src/database/database.service.js';
 import { UsersService } from '../src/users/users.service.js';
 
@@ -21,6 +20,7 @@ describe('API integration (PostgreSQL)', () => {
     process.env.AUTH0_DOMAIN = 'tenant.example.test';
     process.env.AUTH0_AUDIENCE = 'https://api.tutorforge.test';
 
+    const { AppModule } = await import('../src/app.module.js');
     const moduleFixture = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
