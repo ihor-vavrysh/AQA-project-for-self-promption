@@ -1,3 +1,5 @@
+export * from './catalog.js';
+
 import { z } from 'zod';
 
 export type JsonValue =

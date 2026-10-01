@@ -37,6 +37,195 @@
         ]
       }
     },
+    "/api/v1/catalog/taxonomy": {
+      "get": {
+        "description": "Returns the tree. By default only nodes that pass the depth gate are included, along with the ancestors needed to reach them.",
+        "operationId": "CatalogController_getTaxonomy",
+        "parameters": [
+          {
+            "name": "includeUnpublished",
+            "required": false,
+            "in": "query",
+            "description": "Include nodes that have not yet passed the depth gate",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TaxonomyTreeNodeDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Browse the subject taxonomy",
+        "tags": [
+          "catalog"
+        ]
+      }
+    },
+    "/api/v1/catalog/nodes/{slug}": {
+      "get": {
+        "operationId": "CatalogController_getNode",
+        "parameters": [
+          {
+            "name": "slug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaxonomyNodeDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No node with that slug"
+          }
+        },
+        "summary": "Get one taxonomy node",
+        "tags": [
+          "catalog"
+        ]
+      }
+    },
+    "/api/v1/catalog/resources": {
+      "get": {
+        "description": "Filtering by node includes the whole subtree beneath it. Only published resources are returned.",
+        "operationId": "CatalogController_listResources",
+        "parameters": [
+          {
+            "name": "offset",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "costModel",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "free",
+                "freemium",
+                "paid"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "language",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "mediaType",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "course",
+                "tutorial",
+                "book",
+                "reference",
+                "audio",
+                "video"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "node",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceListDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "List published resources with facet counts",
+        "tags": [
+          "catalog"
+        ]
+      }
+    },
+    "/api/v1/catalog/resources/{slug}": {
+      "get": {
+        "operationId": "CatalogController_getResource",
+        "parameters": [
+          {
+            "name": "slug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceDetailDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No published resource with that slug"
+          }
+        },
+        "summary": "Get one published resource",
+        "tags": [
+          "catalog"
+        ]
+      }
+    },
     "/api/v1/me": {
       "get": {
         "operationId": "UsersController_getMe",
@@ -85,6 +274,432 @@
       }
     },
     "schemas": {
+      "TaxonomyTreeNodeDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "parentId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "scheme": {
+            "type": "string",
+            "enum": [
+              "isced-f",
+              "uk-nc",
+              "sced",
+              "internal"
+            ]
+          },
+          "code": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string",
+            "description": "Dot-separated node codes from the root"
+          },
+          "depth": {
+            "type": "number"
+          },
+          "names": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Localised labels keyed by language tag; \"en\" is required"
+          },
+          "resourceCount": {
+            "type": "number"
+          },
+          "mediaTypeCount": {
+            "type": "number"
+          },
+          "published": {
+            "type": "boolean",
+            "description": "True once the node passes the depth gate"
+          },
+          "children": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TaxonomyTreeNodeDto"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "parentId",
+          "scheme",
+          "code",
+          "slug",
+          "path",
+          "depth",
+          "names",
+          "resourceCount",
+          "mediaTypeCount",
+          "published",
+          "children"
+        ]
+      },
+      "TaxonomyNodeDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "parentId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "scheme": {
+            "type": "string",
+            "enum": [
+              "isced-f",
+              "uk-nc",
+              "sced",
+              "internal"
+            ]
+          },
+          "code": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string",
+            "description": "Dot-separated node codes from the root"
+          },
+          "depth": {
+            "type": "number"
+          },
+          "names": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Localised labels keyed by language tag; \"en\" is required"
+          },
+          "resourceCount": {
+            "type": "number"
+          },
+          "mediaTypeCount": {
+            "type": "number"
+          },
+          "published": {
+            "type": "boolean",
+            "description": "True once the node passes the depth gate"
+          }
+        },
+        "required": [
+          "id",
+          "parentId",
+          "scheme",
+          "code",
+          "slug",
+          "path",
+          "depth",
+          "names",
+          "resourceCount",
+          "mediaTypeCount",
+          "published"
+        ]
+      },
+      "ResourceSummaryDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "mediaType": {
+            "type": "string",
+            "enum": [
+              "course",
+              "tutorial",
+              "book",
+              "reference",
+              "audio",
+              "video"
+            ]
+          },
+          "provider": {
+            "type": "string"
+          },
+          "language": {
+            "type": "string"
+          },
+          "licence": {
+            "type": "string",
+            "enum": [
+              "cc0",
+              "public-domain",
+              "cc-by",
+              "cc-by-sa",
+              "platform-tos",
+              "proprietary"
+            ]
+          },
+          "usageTier": {
+            "type": "string",
+            "enum": [
+              "open",
+              "embed",
+              "commercial"
+            ]
+          },
+          "costModel": {
+            "type": "string",
+            "enum": [
+              "free",
+              "freemium",
+              "paid"
+            ]
+          },
+          "durationSeconds": {
+            "type": "number",
+            "nullable": true
+          },
+          "pageCount": {
+            "type": "number",
+            "nullable": true
+          },
+          "lastVerifiedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "title",
+          "description",
+          "mediaType",
+          "provider",
+          "language",
+          "licence",
+          "usageTier",
+          "costModel",
+          "durationSeconds",
+          "pageCount",
+          "lastVerifiedAt"
+        ]
+      },
+      "ResourceFacetsDto": {
+        "type": "object",
+        "properties": {
+          "mediaType": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number"
+            }
+          },
+          "costModel": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number"
+            }
+          }
+        },
+        "required": [
+          "mediaType",
+          "costModel"
+        ]
+      },
+      "ResourceListDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ResourceSummaryDto"
+            }
+          },
+          "total": {
+            "type": "number"
+          },
+          "facets": {
+            "$ref": "#/components/schemas/ResourceFacetsDto"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "facets"
+        ]
+      },
+      "TierCapabilitiesDto": {
+        "type": "object",
+        "properties": {
+          "deepLink": {
+            "type": "boolean"
+          },
+          "embed": {
+            "type": "boolean"
+          },
+          "mirror": {
+            "type": "boolean"
+          },
+          "affiliate": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "deepLink",
+          "embed",
+          "mirror",
+          "affiliate"
+        ]
+      },
+      "ResourceDetailDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "mediaType": {
+            "type": "string",
+            "enum": [
+              "course",
+              "tutorial",
+              "book",
+              "reference",
+              "audio",
+              "video"
+            ]
+          },
+          "provider": {
+            "type": "string"
+          },
+          "language": {
+            "type": "string"
+          },
+          "licence": {
+            "type": "string",
+            "enum": [
+              "cc0",
+              "public-domain",
+              "cc-by",
+              "cc-by-sa",
+              "platform-tos",
+              "proprietary"
+            ]
+          },
+          "usageTier": {
+            "type": "string",
+            "enum": [
+              "open",
+              "embed",
+              "commercial"
+            ]
+          },
+          "costModel": {
+            "type": "string",
+            "enum": [
+              "free",
+              "freemium",
+              "paid"
+            ]
+          },
+          "durationSeconds": {
+            "type": "number",
+            "nullable": true
+          },
+          "pageCount": {
+            "type": "number",
+            "nullable": true
+          },
+          "lastVerifiedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "canonicalUrl": {
+            "type": "string",
+            "format": "uri"
+          },
+          "embedUrl": {
+            "type": "string",
+            "format": "uri",
+            "nullable": true,
+            "description": "Only present when the usage tier permits embedding"
+          },
+          "outboundUrl": {
+            "type": "string",
+            "format": "uri",
+            "description": "Where the visitor should be sent: the affiliate link where the tier permits one, otherwise the canonical URL"
+          },
+          "attributionText": {
+            "type": "string",
+            "nullable": true
+          },
+          "authors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "isbn": {
+            "type": "string",
+            "nullable": true
+          },
+          "capabilities": {
+            "$ref": "#/components/schemas/TierCapabilitiesDto"
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "title",
+          "description",
+          "mediaType",
+          "provider",
+          "language",
+          "licence",
+          "usageTier",
+          "costModel",
+          "durationSeconds",
+          "pageCount",
+          "lastVerifiedAt",
+          "canonicalUrl",
+          "embedUrl",
+          "outboundUrl",
+          "attributionText",
+          "authors",
+          "isbn",
+          "capabilities"
+        ]
+      },
       "CurrentUserDto": {
         "type": "object",
         "properties": {
